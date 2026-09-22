@@ -16,10 +16,12 @@
   };
 
   var zone = {};
-  var X_MIN = -36,
-    X_MAX = 36,
-    Z_MIN = -12,
-    Z_MAX = 54;
+  // Display zoom (inches). Tighter than full field so mitt→ball miss is visible.
+  // Zone / plate geometry below still uses real strike-zone inches.
+  var X_MIN = -18,
+    X_MAX = 18,
+    Z_MIN = 6,
+    Z_MAX = 46;
   var ZONE_HALF = 8.5,
     ZONE_BOT = 18,
     ZONE_TOP = 42,
@@ -29,18 +31,35 @@
 
   var CENTER = { x: 0, z: (18 + 42) / 2 };
 
+  var RESULT_KEYS = [
+    "whiff",
+    "hit",
+    "out",
+    "foul",
+    "ball",
+    "called_strike",
+    "hbp",
+    "other",
+  ];
+
   var state = {
     pitches: [],
     mode: "selection",
     outings: {},
     types: {},
+    results: {},
     // Pitcher-view inches: +x = pitcher's right (3B / LHB), +z = up.
-    // Glove sits at avg target; ball at target + mean miss = avg plate loc.
+    // Glove = avg target; ball = avg location (real means only).
     lastAvgTarget: { x: CENTER.x, z: CENTER.z },
+    lastAvgLoc: { x: CENTER.x, z: CENTER.z },
     lastAvgMiss: { x: 0, z: 0 },
     hitRegions: [],
     selectedId: null,
   };
+
+  RESULT_KEYS.forEach(function (k) {
+    state.results[k] = true;
+  });
 
   var canvas = document.getElementById("chart");
   var wrap = document.getElementById("chart-wrap");
@@ -154,21 +173,32 @@
     ctx.strokeRect(tl.x, tl.y, br.x - tl.x, br.y - tl.y);
   }
 
-  function selectedPitches() {
-    if (state.mode === "all") {
-      return state.pitches.slice();
+  function resultAllowed(p) {
+    var cls = p.marker_class || "other";
+    if (!Object.prototype.hasOwnProperty.call(state.results, cls)) {
+      cls = "other";
     }
-    var anyOuting = Object.keys(state.outings).some(function (k) {
-      return state.outings[k];
-    });
-    var anyType = Object.keys(state.types).some(function (k) {
-      return state.types[k];
-    });
-    return state.pitches.filter(function (p) {
-      if (anyOuting && !state.outings[p.outing]) return false;
-      if (anyType && !state.types[p.pitch_type]) return false;
-      return true;
-    });
+    return !!state.results[cls];
+  }
+
+  function selectedPitches() {
+    var pool =
+      state.mode === "all"
+        ? state.pitches.slice()
+        : (function () {
+            var anyOuting = Object.keys(state.outings).some(function (k) {
+              return state.outings[k];
+            });
+            var anyType = Object.keys(state.types).some(function (k) {
+              return state.types[k];
+            });
+            return state.pitches.filter(function (p) {
+              if (anyOuting && !state.outings[p.outing]) return false;
+              if (anyType && !state.types[p.pitch_type]) return false;
+              return true;
+            });
+          })();
+    return pool.filter(resultAllowed);
   }
 
   function aggregate(pitches) {
@@ -204,17 +234,16 @@
       alz = mean(lz),
       amx = mean(mx),
       amz = mean(mz);
+    // Real averages only: glove = mean(target), ball = mean(location).
+    // Avg |d| ≠ |net vector| when per-pitch misses cancel — that is expected.
     var avgTarget = atx == null ? null : { x: atx, z: atz };
-    // Ball = avg plate location = avg(target) + avg(miss vector). Prefer
-    // target + mean miss so the mitt is clearly the origin of the offset.
+    var avgLoc = alx == null ? null : { x: alx, z: alz };
     var avgMissVec =
-      amx == null ? null : { x: amx, z: amz };
-    var avgLoc =
-      avgTarget && avgMissVec
-        ? { x: avgTarget.x + avgMissVec.x, z: avgTarget.z + avgMissVec.z }
-        : alx == null
-          ? null
-          : { x: alx, z: alz };
+      amx == null
+        ? avgTarget && avgLoc
+          ? { x: avgLoc.x - avgTarget.x, z: avgLoc.z - avgTarget.z }
+          : null
+        : { x: amx, z: amz };
     return {
       n: pitches.length,
       avgTarget: avgTarget,
@@ -228,18 +257,32 @@
   function resolveAverages(agg) {
     var muted = false;
     var target = agg.avgTarget;
-    var missVec = agg.avgMissVec;
     var loc = agg.avgLoc;
-    if (target && missVec && loc) {
+    var missVec = agg.avgMissVec;
+    if (target && loc) {
       state.lastAvgTarget = { x: target.x, z: target.z };
+      state.lastAvgLoc = { x: loc.x, z: loc.z };
+      missVec = missVec || { x: loc.x - target.x, z: loc.z - target.z };
       state.lastAvgMiss = { x: missVec.x, z: missVec.z };
     } else {
       muted = true;
       target = state.lastAvgTarget || CENTER;
-      missVec = state.lastAvgMiss || { x: 0, z: 0 };
-      loc = { x: target.x + missVec.x, z: target.z + missVec.z };
+      loc = state.lastAvgLoc || {
+        x: target.x + (state.lastAvgMiss ? state.lastAvgMiss.x : 0),
+        z: target.z + (state.lastAvgMiss ? state.lastAvgMiss.z : 0),
+      };
+      missVec = {
+        x: loc.x - target.x,
+        z: loc.z - target.z,
+      };
     }
-    return { target: target, loc: loc, missVec: missVec, muted: muted };
+    return {
+      target: target,
+      loc: loc,
+      missVec: missVec,
+      avgMiss: agg.avgMiss,
+      muted: muted,
+    };
   }
 
   function markerColor(p) {
@@ -269,6 +312,89 @@
       ctx.lineWidth = 1.4;
       ctx.stroke();
     }
+  }
+
+  function drawMissConnector(ctx, ig, ab, avg) {
+    var dx = ab.x - ig.x;
+    var dy = ab.y - ig.y;
+    var dist = Math.sqrt(dx * dx + dy * dy);
+    var muted = !!avg.muted;
+    var stroke = muted ? "rgba(62, 207, 106, 0.35)" : "rgba(62, 207, 106, 0.95)";
+    var fill = muted ? "rgba(62, 207, 106, 0.2)" : "rgba(62, 207, 106, 0.9)";
+
+    // Exact point rings under the icons (true inch→px anchors).
+    ctx.strokeStyle = muted ? "rgba(226,232,240,0.35)" : "rgba(248,250,252,0.9)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(ig.x, ig.y, 5, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(ab.x, ab.y, 4, 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (dist < 0.5) return;
+
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 2.25;
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(ig.x, ig.y);
+    ctx.lineTo(ab.x, ab.y);
+    ctx.stroke();
+
+    // Arrowhead at ball end.
+    var ux = dx / dist;
+    var uy = dy / dist;
+    var ah = 8;
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.moveTo(ab.x, ab.y);
+    ctx.lineTo(ab.x - ux * ah - uy * 4.5, ab.y - uy * ah + ux * 4.5);
+    ctx.lineTo(ab.x - ux * ah + uy * 4.5, ab.y - uy * ah - ux * 4.5);
+    ctx.closePath();
+    ctx.fill();
+
+    // Connector label = |avg loc − avg target| (= |net vector|), not mean |d|.
+    var mag =
+      avg.missVec != null
+        ? hypot(avg.missVec.x, avg.missVec.z)
+        : hypot(avg.loc.x - avg.target.x, avg.loc.z - avg.target.z);
+    var label = "|net| " + mag.toFixed(1) + "″";
+    var mx = (ig.x + ab.x) / 2;
+    var my = (ig.y + ab.y) / 2;
+    // Offset label perpendicular to the vector so it doesn't sit on the line.
+    var px = -uy * 12;
+    var py = ux * 12;
+    // Prefer above the segment when nearly vertical.
+    if (Math.abs(dx) < Math.abs(dy) * 0.35) {
+      px = 14;
+      py = 0;
+    }
+    ctx.font = "650 11px Manrope, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    var tw = ctx.measureText(label).width;
+    var padX = 6;
+    var padY = 4;
+    ctx.fillStyle = muted ? "rgba(15,20,36,0.55)" : "rgba(15,20,36,0.82)";
+    ctx.strokeStyle = muted ? "rgba(62,207,106,0.3)" : "rgba(62,207,106,0.65)";
+    ctx.lineWidth = 1;
+    roundRect(ctx, mx + px - tw / 2 - padX, my + py - 8, tw + padX * 2, 16, 6);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = muted ? "rgba(226,232,240,0.55)" : "#e8eef5";
+    ctx.fillText(label, mx + px, my + py);
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    var rr = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + rr, y);
+    ctx.arcTo(x + w, y, x + w, y + h, rr);
+    ctx.arcTo(x + w, y + h, x, y + h, rr);
+    ctx.arcTo(x, y + h, x, y, rr);
+    ctx.arcTo(x, y, x + w, y, rr);
+    ctx.closePath();
   }
 
   function drawChart(pitches, avg) {
@@ -305,6 +431,7 @@
     state.hitRegions = [];
     pitches.forEach(function (p) {
       var pt = inchesToPx(p.loc_x_in, p.loc_z_in);
+      if (pt.x < -8 || pt.y < -8 || pt.x > sz.w + 8 || pt.y > sz.h + 8) return;
       var color = markerColor(p);
       var selected = state.selectedId != null && String(p.id) === String(state.selectedId);
       if (p.marker === "x") {
@@ -320,27 +447,40 @@
       });
     });
 
-    // Glove at avg target (origin); ball at target + mean miss (= avg loc).
+    // Glove at avg target; ball at avg location — real independent means.
     var ig = inchesToPx(avg.target.x, avg.target.z);
     var ab = inchesToPx(avg.loc.x, avg.loc.z);
-    ctx.strokeStyle = avg.muted ? "rgba(62, 207, 106, 0.25)" : "rgba(62, 207, 106, 0.75)";
-    ctx.lineWidth = 2;
-    ctx.setLineDash([5, 4]);
-    ctx.beginPath();
-    ctx.moveTo(ig.x, ig.y);
-    ctx.lineTo(ab.x, ab.y);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    drawMissConnector(ctx, ig, ab, avg);
 
     gloveEl.style.left = ig.x + "px";
     gloveEl.style.top = ig.y + "px";
     gloveEl.style.display = "block";
     gloveEl.classList.toggle("is-muted", !!avg.muted);
+    gloveEl.setAttribute(
+      "title",
+      "Avg target " + avg.target.x.toFixed(1) + " / " + avg.target.z.toFixed(1) + " in"
+    );
 
     ballEl.style.left = ab.x + "px";
     ballEl.style.top = ab.y + "px";
     ballEl.style.display = "block";
     ballEl.classList.toggle("is-muted", !!avg.muted);
+    ballEl.setAttribute(
+      "title",
+      "Avg location " + avg.loc.x.toFixed(1) + " / " + avg.loc.z.toFixed(1) + " in"
+    );
+
+    // Expose for hard-verify / debugging.
+    var sepIn = hypot(avg.loc.x - avg.target.x, avg.loc.z - avg.target.z);
+    var sepPx = hypot(ab.x - ig.x, ab.y - ig.y);
+    wrap.dataset.pxPerIn = String(m.scale.toFixed(3));
+    wrap.dataset.glovePx = ig.x.toFixed(1) + "," + ig.y.toFixed(1);
+    wrap.dataset.ballPx = ab.x.toFixed(1) + "," + ab.y.toFixed(1);
+    wrap.dataset.targetIn =
+      avg.target.x.toFixed(3) + "," + avg.target.z.toFixed(3);
+    wrap.dataset.locIn = avg.loc.x.toFixed(3) + "," + avg.loc.z.toFixed(3);
+    wrap.dataset.sepIn = sepIn.toFixed(3);
+    wrap.dataset.sepPx = sepPx.toFixed(1);
   }
 
   function fmtSignedIn(v) {
@@ -546,21 +686,20 @@
     var missEl = document.getElementById("miss-row");
     if (agg.n === 0) {
       missEl.innerHTML =
-        'Avg miss: <strong>—</strong> <span style="opacity:0.7">(no pitches in selection · showing last averages)</span>';
+        'Avg miss |d|: <strong>—</strong> <span style="opacity:0.7">(no pitches in selection · showing last averages)</span>';
     } else {
       var vec = avg.missVec;
-      var vecMag =
-        vec != null ? hypot(vec.x, vec.z) : hypot(avg.loc.x - avg.target.x, avg.loc.z - avg.target.z);
+      var netMag = vec != null ? hypot(vec.x, vec.z) : 0;
       missEl.innerHTML =
-        "Avg miss: <strong>" +
+        "Avg miss |d|: <strong>" +
         (agg.avgMiss == null ? "—" : agg.avgMiss.toFixed(1) + "″") +
         "</strong>" +
         (agg.medMiss != null ? " · median " + agg.medMiss.toFixed(1) + "″" : "") +
-        '<div class="miss-vec">Miss vector (glove → ball): <strong>' +
+        '<div class="miss-vec">Net miss vector (avg loc − avg target): <strong>' +
         fmtMissVec(vec) +
-        "</strong> · |" +
-        vecMag.toFixed(1) +
-        "″|</div>";
+        "</strong> · |net| " +
+        netMag.toFixed(1) +
+        "″ <span style=\"opacity:0.75\">(|d| can be larger when misses cancel)</span></div>";
     }
 
     document.getElementById("summary").textContent =
@@ -571,11 +710,17 @@
       Object.keys(groupBy(pitches, "pitch_type")).length +
       " pitch types";
 
+    var netMagMetric =
+      avg.missVec != null ? hypot(avg.missVec.x, avg.missVec.z) : null;
     document.getElementById("metrics").innerHTML = [
       ["Pitches", String(agg.n)],
-      ["Avg miss |d|", fmtIn(agg.avgMiss)],
+      ["Avg miss |d|", fmtIn(agg.avgMiss) + " · mean abs"],
       ["Median miss |d|", fmtIn(agg.medMiss)],
-      ["Miss vector", fmtMissVec(avg.missVec)],
+      [
+        "Net miss vector",
+        fmtMissVec(avg.missVec) +
+          (netMagMetric != null ? " · |net| " + netMagMetric.toFixed(1) + "″" : ""),
+      ],
       ["Avg target x/z", fmtXZ(avg.target)],
       ["Avg location x/z", fmtXZ(avg.loc)],
     ]
@@ -720,6 +865,41 @@
     });
   });
 
+  function syncResultKeyUi() {
+    document.querySelectorAll("[data-result]").forEach(function (btn) {
+      var key = btn.getAttribute("data-result");
+      var on = !!state.results[key];
+      btn.classList.toggle("is-active", on);
+      btn.classList.toggle("is-off", !on);
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+  }
+
+  document.getElementById("pitch-key").addEventListener("click", function (ev) {
+    var btn = ev.target.closest("[data-result]");
+    if (!btn) return;
+    var key = btn.getAttribute("data-result");
+    if (!Object.prototype.hasOwnProperty.call(state.results, key)) return;
+    state.results[key] = !state.results[key];
+    syncResultKeyUi();
+    refresh();
+  });
+
+  document.getElementById("results-all").addEventListener("click", function () {
+    RESULT_KEYS.forEach(function (k) {
+      state.results[k] = true;
+    });
+    syncResultKeyUi();
+    refresh();
+  });
+  document.getElementById("results-none").addEventListener("click", function () {
+    RESULT_KEYS.forEach(function (k) {
+      state.results[k] = false;
+    });
+    syncResultKeyUi();
+    refresh();
+  });
+
   window.addEventListener("resize", function () {
     refresh();
   });
@@ -731,16 +911,18 @@
     })
     .then(function (data) {
       zone = data.zone || {};
-      X_MIN = Number(zone.chart_x_min_in != null ? zone.chart_x_min_in : -36);
-      X_MAX = Number(zone.chart_x_max_in != null ? zone.chart_x_max_in : 36);
-      Z_MIN = Number(zone.chart_z_min_in != null ? zone.chart_z_min_in : -12);
-      Z_MAX = Number(zone.chart_z_max_in != null ? zone.chart_z_max_in : 54);
+      // Keep plate / zone geometry from seed, but use a tighter display window
+      // so average mitt→ball separation is readable (~14–16 px/in).
       ZONE_HALF = Number(zone.plate_half_width_in != null ? zone.plate_half_width_in : 8.5);
       ZONE_BOT = Number(zone.zone_bot_in != null ? zone.zone_bot_in : 18);
       ZONE_TOP = Number(zone.zone_top_in != null ? zone.zone_top_in : 42);
       PLATE_TIP_Z = Number(zone.plate_tip_z_in != null ? zone.plate_tip_z_in : -8.5);
       BOX_INNER = Number(zone.batter_box_inner_in != null ? zone.batter_box_inner_in : 14.5);
       BOX_OUTER = Number(zone.batter_box_outer_in != null ? zone.batter_box_outer_in : 50);
+      X_MIN = -18;
+      X_MAX = 18;
+      Z_MIN = 6;
+      Z_MAX = 46;
       CENTER = { x: 0, z: (ZONE_BOT + ZONE_TOP) / 2 };
 
       state.pitches = (data.pitches || []).map(function (p) {
@@ -756,11 +938,16 @@
       });
 
       var fullAgg = aggregate(state.pitches);
-      if (fullAgg.avgTarget && fullAgg.avgMissVec) {
+      if (fullAgg.avgTarget && fullAgg.avgLoc) {
         state.lastAvgTarget = fullAgg.avgTarget;
-        state.lastAvgMiss = fullAgg.avgMissVec;
+        state.lastAvgLoc = fullAgg.avgLoc;
+        state.lastAvgMiss = fullAgg.avgMissVec || {
+          x: fullAgg.avgLoc.x - fullAgg.avgTarget.x,
+          z: fullAgg.avgLoc.z - fullAgg.avgTarget.z,
+        };
       } else {
         state.lastAvgTarget = { x: CENTER.x, z: CENTER.z };
+        state.lastAvgLoc = { x: CENTER.x, z: CENTER.z };
         state.lastAvgMiss = { x: 0, z: 0 };
       }
 

@@ -43,9 +43,10 @@
           <div class="panel-head">
             <h2><span class="num">∑</span> Average target vs location</h2>
             <p class="hint">
-              Mitt = average target (origin) · Ball = average plate location =
-              target + mean miss · dashed line = miss vector. Scatter shows each
-              selected pitch (X = swing, dot = take). Click a marker for details.
+              Mitt = average target · Ball = average plate location (real
+              means). Avg |d| is mean absolute miss; net vector can cancel —
+              filter key outcomes to see directional miss. Click a marker for
+              details.
             </p>
           </div>
           <div class="chart-wrap" id="chart-wrap">
@@ -72,24 +73,42 @@
           <div class="miss-row" id="miss-row">Avg miss: <strong>—</strong></div>
 
           <div class="key-panel" aria-label="Pitch marker key">
-            <div class="key-title">Pitch key</div>
-            <div class="key-grid">
+            <div class="key-title-row">
+              <div class="key-title">Pitch key · click to filter</div>
+              <div class="filter-actions">
+                <button type="button" class="linkish" id="results-all">All</button>
+                <button type="button" class="linkish" id="results-none">None</button>
+              </div>
+            </div>
+            <div class="key-grid" id="pitch-key">
               <div class="key-col">
                 <div class="key-heading">X · Swing</div>
-                <div class="key-item"><span class="key-mark key-x key-x--whiff" aria-hidden="true"></span> Red X · Whiff</div>
-                <div class="key-item"><span class="key-mark key-x key-x--hit" aria-hidden="true"></span> Green X · Hit</div>
-                <div class="key-item"><span class="key-mark key-x key-x--out" aria-hidden="true"></span> Blue X · Out</div>
-                <div class="key-item"><span class="key-mark key-x key-x--foul" aria-hidden="true"></span> Amber X · Foul</div>
+                <button type="button" class="key-item is-active" data-result="whiff" aria-pressed="true">
+                  <span class="key-mark key-x key-x--whiff" aria-hidden="true"></span> Red X · Whiff
+                </button>
+                <button type="button" class="key-item is-active" data-result="hit" aria-pressed="true">
+                  <span class="key-mark key-x key-x--hit" aria-hidden="true"></span> Green X · Hit
+                </button>
+                <button type="button" class="key-item is-active" data-result="out" aria-pressed="true">
+                  <span class="key-mark key-x key-x--out" aria-hidden="true"></span> Blue X · Out
+                </button>
+                <button type="button" class="key-item is-active" data-result="foul" aria-pressed="true">
+                  <span class="key-mark key-x key-x--foul" aria-hidden="true"></span> Amber X · Foul
+                </button>
               </div>
               <div class="key-col">
                 <div class="key-heading">Dot · Take</div>
-                <div class="key-item"><span class="key-mark key-dot key-dot--ball" aria-hidden="true"></span> Blue · Ball</div>
-                <div class="key-item"><span class="key-mark key-dot key-dot--strike" aria-hidden="true"></span> Red · Called strike</div>
+                <button type="button" class="key-item is-active" data-result="ball" aria-pressed="true">
+                  <span class="key-mark key-dot key-dot--ball" aria-hidden="true"></span> Blue · Ball
+                </button>
+                <button type="button" class="key-item is-active" data-result="called_strike" aria-pressed="true">
+                  <span class="key-mark key-dot key-dot--strike" aria-hidden="true"></span> Red · Called strike
+                </button>
               </div>
               <div class="key-col">
                 <div class="key-heading">Averages</div>
-                <div class="key-item"><img class="key-img" src="assets/catcher_glove.png" alt="" /> Mitt · avg target</div>
-                <div class="key-item"><img class="key-img key-img--ball" src="assets/baseball.png" alt="" /> Ball · avg location</div>
+                <div class="key-item key-item--static"><img class="key-img" src="assets/catcher_glove.png" alt="" /> Mitt · avg target</div>
+                <div class="key-item key-item--static"><img class="key-img key-img--ball" src="assets/baseball.png" alt="" /> Ball · avg location</div>
               </div>
             </div>
           </div>

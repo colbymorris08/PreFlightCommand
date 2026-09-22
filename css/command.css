@@ -173,9 +173,9 @@ a {
 .chart-wrap {
   position: relative;
   width: 100%;
-  max-width: 560px;
+  max-width: 640px;
   margin: 0 auto;
-  aspect-ratio: 72 / 66;
+  aspect-ratio: 36 / 40;
   background: var(--chart);
   border-radius: 12px;
   border: 1px solid #2a3550;
@@ -197,15 +197,15 @@ a {
 }
 
 .marker--glove {
-  width: 40px;
+  width: 20px;
   height: auto;
   z-index: 3;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
 }
 
 .marker--ball {
-  width: 22px;
-  height: 22px;
+  width: 12px;
+  height: 12px;
   z-index: 4;
   border-radius: 50%;
   object-fit: cover;
@@ -269,6 +269,13 @@ a {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
+}
+
+.key-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
   margin-bottom: 0.55rem;
 }
 
@@ -295,9 +302,48 @@ a {
   display: flex;
   align-items: center;
   gap: 0.45rem;
+  width: 100%;
+  font: inherit;
   font-size: 0.78rem;
   color: var(--muted);
   margin-bottom: 0.28rem;
+  padding: 0.28rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+button.key-item:hover {
+  border-color: #2a3550;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+button.key-item.is-active {
+  color: var(--text);
+  border-color: rgba(61, 139, 253, 0.45);
+  background: rgba(61, 139, 253, 0.12);
+}
+
+button.key-item.is-off {
+  opacity: 0.38;
+  color: var(--muted);
+  border-color: transparent;
+  background: transparent;
+  text-decoration: line-through;
+  text-decoration-color: rgba(148, 163, 184, 0.55);
+}
+
+.key-item--static {
+  cursor: default;
+  padding-left: 0.4rem;
+}
+
+.key-item--static:hover {
+  border-color: transparent;
+  background: transparent;
 }
 
 .key-mark {
