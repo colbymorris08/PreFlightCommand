@@ -4,7 +4,8 @@ Interactive **mitt target vs pitch location** tracker for Preflight, seeded with
 
 ## Live
 
-GitHub Pages (after deploy): `https://colbymorris08.github.io/PreFlightCommand/`
+**Live:** https://colbymorris08.github.io/PreFlightCommand/  
+**Repo:** https://github.com/colbymorris08/PreFlightCommand
 
 ## Local
 
