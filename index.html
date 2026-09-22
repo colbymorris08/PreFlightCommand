@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Preflight Command — Mitt Target vs Location</title>
+    <meta
+      name="description"
+      content="Preflight command tracker: OpenCommand mitt targets vs Statcast location, filterable by outing and pitch type."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/command.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="top">
+        <div class="brand">
+          <strong>Preflight</strong>
+          <em>Command</em>
+        </div>
+        <p class="lede">
+          Mitt target vs actual location — pitcher view. Targets from
+          <a href="https://github.com/tomdoyo/open-command" rel="noopener" target="_blank">OpenCommand</a>
+          glove CV; locations from Statcast. Optional Preflight catcher-mitt overlay when tracked.
+        </p>
+      </header>
+
+      <section class="player-bar" id="player-bar">
+        <div>
+          <div class="eyebrow">2026 season seed</div>
+          <h1 id="pitcher-name">Loading…</h1>
+          <p class="meta" id="pitcher-meta"></p>
+        </div>
+        <div class="source-pill" id="source-pill">OpenCommand inferred · Statcast plate</div>
+      </section>
+
+      <div class="layout">
+        <main class="panel viz-panel">
+          <div class="panel-head">
+            <h2><span class="num">∑</span> Average target vs location</h2>
+            <p class="hint">
+              Glove = mean inferred mitt target · Ball = mean Statcast location · dashed line = miss vector.
+              Scatter shows every selected pitch (target ×, location ·).
+            </p>
+          </div>
+          <div class="chart-wrap" id="chart-wrap">
+            <canvas id="chart" width="520" height="480" aria-label="Command chart pitcher view"></canvas>
+            <img
+              id="glove"
+              class="marker marker--glove"
+              src="assets/catcher_glove.png"
+              alt="Average mitt target"
+              draggable="false"
+            />
+            <img
+              id="ball"
+              class="marker marker--ball"
+              src="assets/baseball.png"
+              alt="Average pitch location"
+              draggable="false"
+            />
+            <div class="chart-labels">
+              <span>Your left · LHB</span>
+              <span>Your right · RHB</span>
+            </div>
+          </div>
+          <div class="miss-row" id="miss-row">Avg miss: <strong>—</strong></div>
+          <div class="legend">
+            <span><i class="lg lg-glove"></i> Avg mitt target (OpenCommand)</span>
+            <span><i class="lg lg-ball"></i> Avg location (Statcast)</span>
+            <span><i class="lg lg-cmitt"></i> Preflight cmitt (when available)</span>
+            <span><i class="lg lg-x"></i> Per-pitch target</span>
+            <span><i class="lg lg-dot"></i> Per-pitch location</span>
+          </div>
+        </main>
+
+        <aside class="panel side-panel">
+          <div class="panel-head">
+            <h2><span class="num">1</span> Filters</h2>
+            <p class="hint">Toggle outings and pitch types. Empty selection = all. Updates live.</p>
+          </div>
+
+          <div class="seg" role="group" aria-label="Aggregate mode">
+            <button type="button" class="seg-btn is-active" data-mode="selection">Selection</button>
+            <button type="button" class="seg-btn" data-mode="all">All outings × types</button>
+          </div>
+
+          <div class="filter-block">
+            <div class="filter-row">
+              <span class="filter-label">Outings</span>
+              <div class="filter-actions">
+                <button type="button" class="linkish" id="outings-all">All</button>
+                <button type="button" class="linkish" id="outings-none">None</button>
+              </div>
+            </div>
+            <div class="chips" id="outing-chips"></div>
+          </div>
+
+          <div class="filter-block">
+            <div class="filter-row">
+              <span class="filter-label">Pitch types</span>
+              <div class="filter-actions">
+                <button type="button" class="linkish" id="types-all">All</button>
+                <button type="button" class="linkish" id="types-none">None</button>
+              </div>
+            </div>
+            <div class="chips" id="type-chips"></div>
+          </div>
+
+          <div class="filter-block">
+            <label class="check">
+              <input type="checkbox" id="cmitt-only" />
+              Only pitches with Preflight cmitt overlay
+            </label>
+          </div>
+
+          <div class="panel-head tight">
+            <h2><span class="num">2</span> Breakdown</h2>
+          </div>
+          <p class="summary" id="summary">—</p>
+          <div class="metrics" id="metrics"></div>
+          <div class="table-wrap">
+            <table class="stats">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>N</th>
+                  <th>Avg miss</th>
+                  <th>Med miss</th>
+                  <th>Avg tgt x/z</th>
+                  <th>Avg loc x/z</th>
+                </tr>
+              </thead>
+              <tbody id="by-type"></tbody>
+            </table>
+          </div>
+          <div class="table-wrap">
+            <table class="stats">
+              <thead>
+                <tr>
+                  <th>Outing</th>
+                  <th>N</th>
+                  <th>Avg miss</th>
+                  <th>Types</th>
+                </tr>
+              </thead>
+              <tbody id="by-outing"></tbody>
+            </table>
+          </div>
+        </aside>
+      </div>
+
+      <footer class="foot">
+        <p>
+          Built on
+          <a href="https://github.com/tomdoyo/open-command" rel="noopener" target="_blank">tomdoyo/open-command</a>
+          (CC BY-NC-SA 4.0). Preflight catcher mitt tracking from this repo’s
+          <code>cmitt_*</code> / Savant clip pipeline. Non-commercial demo.
+        </p>
+        <p class="muted" id="foot-detail"></p>
+      </footer>
+    </div>
+    <script src="js/command.js"></script>
+  </body>
+</html>
