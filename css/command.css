@@ -197,21 +197,30 @@ a {
 }
 
 .marker--glove {
-  width: 20px;
+  /* width set in JS: 12″ × px/in from zone scale */
+  width: 12%;
   height: auto;
   z-index: 3;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.45));
 }
 
 .marker--ball {
-  width: 12px;
-  height: 12px;
+  /* width/height set in JS: 2.9″ × px/in (regulation baseball) */
+  width: 3%;
+  height: 3%;
   z-index: 4;
   border-radius: 50%;
   object-fit: cover;
   filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.4));
   -webkit-mask-image: radial-gradient(closest-side, #000 99%, transparent 100%);
   mask-image: radial-gradient(closest-side, #000 99%, transparent 100%);
+}
+
+.scale-caption {
+  margin: 6px 2px 0;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.01em;
 }
 
 .chart-labels {

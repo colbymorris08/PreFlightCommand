@@ -32,7 +32,7 @@ python3 -m http.server 8765
 | Blue dot | Take · ball |
 | Red dot | Take · called strike |
 
-Mitt graphic = average target · Ball graphic = average location = target + mean miss vector (always shown). Coordinates are pitcher-view inches (`+x` = pitcher's right / LHB, `+z` = up); Statcast/OpenCommand catcher-right `plate_x` is negated on ingest.
+Mitt graphic = average target · Ball graphic = average location (real independent means). Icons are true-to-scale vs the zone: mitt **12″** wide, ball **2.9″** diameter (regulation baseball from 9–9.25″ circumference ÷ π), using the same px/inch as pitch markers. Coordinates are pitcher-view inches (`+x` = pitcher's right / LHB, `+z` = up); Statcast/OpenCommand catcher-right `plate_x` is negated on ingest.
 
 ## Filters
 

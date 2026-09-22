@@ -29,6 +29,13 @@
   var BOX_INNER = 14.5,
     BOX_OUTER = 50;
 
+  // True-to-scale icons vs strike-zone inches (same px/in as pitch markers).
+  // Mitt: ~12″ catcher's mitt footprint on the zone.
+  // Ball: regulation baseball diameter ≈ 2.9″ (9–9.25″ circumference / π);
+  //       no visibility bump — keep official size so the plot stays honest.
+  var GLOVE_WIDTH_IN = 12;
+  var BALL_DIAMETER_IN = 2.9;
+
   var CENTER = { x: 0, z: (18 + 42) / 2 };
 
   var RESULT_KEYS = [
@@ -452,13 +459,27 @@
     var ab = inchesToPx(avg.loc.x, avg.loc.z);
     drawMissConnector(ctx, ig, ab, avg);
 
+    // icon_size_px = inches × px_per_inch (m.scale from zone bounds).
+    var glovePx = GLOVE_WIDTH_IN * m.scale;
+    var ballPx = BALL_DIAMETER_IN * m.scale;
+    gloveEl.style.width = glovePx + "px";
+    gloveEl.style.height = "auto";
+    ballEl.style.width = ballPx + "px";
+    ballEl.style.height = ballPx + "px";
+
     gloveEl.style.left = ig.x + "px";
     gloveEl.style.top = ig.y + "px";
     gloveEl.style.display = "block";
     gloveEl.classList.toggle("is-muted", !!avg.muted);
     gloveEl.setAttribute(
       "title",
-      "Avg target " + avg.target.x.toFixed(1) + " / " + avg.target.z.toFixed(1) + " in"
+      "Avg target " +
+        avg.target.x.toFixed(1) +
+        " / " +
+        avg.target.z.toFixed(1) +
+        " in · mitt " +
+        GLOVE_WIDTH_IN +
+        "″ wide"
     );
 
     ballEl.style.left = ab.x + "px";
@@ -467,13 +488,23 @@
     ballEl.classList.toggle("is-muted", !!avg.muted);
     ballEl.setAttribute(
       "title",
-      "Avg location " + avg.loc.x.toFixed(1) + " / " + avg.loc.z.toFixed(1) + " in"
+      "Avg location " +
+        avg.loc.x.toFixed(1) +
+        " / " +
+        avg.loc.z.toFixed(1) +
+        " in · ball " +
+        BALL_DIAMETER_IN +
+        "″ dia"
     );
 
     // Expose for hard-verify / debugging.
     var sepIn = hypot(avg.loc.x - avg.target.x, avg.loc.z - avg.target.z);
     var sepPx = hypot(ab.x - ig.x, ab.y - ig.y);
     wrap.dataset.pxPerIn = String(m.scale.toFixed(3));
+    wrap.dataset.gloveIn = String(GLOVE_WIDTH_IN);
+    wrap.dataset.ballIn = String(BALL_DIAMETER_IN);
+    wrap.dataset.gloveSizePx = glovePx.toFixed(1);
+    wrap.dataset.ballSizePx = ballPx.toFixed(1);
     wrap.dataset.glovePx = ig.x.toFixed(1) + "," + ig.y.toFixed(1);
     wrap.dataset.ballPx = ab.x.toFixed(1) + "," + ab.y.toFixed(1);
     wrap.dataset.targetIn =
