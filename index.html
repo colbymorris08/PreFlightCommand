@@ -6,7 +6,7 @@
     <title>Preflight Command — Mitt Target vs Location</title>
     <meta
       name="description"
-      content="Preflight command tracker: OpenCommand mitt targets vs Statcast location, filterable by outing and pitch type."
+      content="Preflight Command: mitt target vs pitch location, filterable by outing and pitch type."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -24,9 +24,8 @@
           <em>Command</em>
         </div>
         <p class="lede">
-          Mitt target vs actual location — pitcher view. Targets from
-          <a href="https://github.com/tomdoyo/open-command" rel="noopener" target="_blank">OpenCommand</a>
-          glove CV; locations from Statcast. Optional Preflight catcher-mitt overlay when tracked.
+          Mitt target vs actual location — pitcher view. Average mitt and ball stay on the plot;
+          click any pitch marker for details and video.
         </p>
       </header>
 
@@ -36,7 +35,7 @@
           <h1 id="pitcher-name">Loading…</h1>
           <p class="meta" id="pitcher-meta"></p>
         </div>
-        <div class="source-pill" id="source-pill">OpenCommand inferred · Statcast plate</div>
+        <div class="source-pill" id="source-pill">Preflight Command · mitt vs location</div>
       </section>
 
       <div class="layout">
@@ -44,8 +43,8 @@
           <div class="panel-head">
             <h2><span class="num">∑</span> Average target vs location</h2>
             <p class="hint">
-              Glove = mean inferred mitt target · Ball = mean Statcast location · dashed line = miss vector.
-              Scatter shows every selected pitch (target ×, location ·).
+              Mitt = average target · Ball = average location · dashed line = miss vector.
+              Scatter shows each selected pitch (X = swing, dot = take). Click a marker for details.
             </p>
           </div>
           <div class="chart-wrap" id="chart-wrap">
@@ -70,19 +69,35 @@
             </div>
           </div>
           <div class="miss-row" id="miss-row">Avg miss: <strong>—</strong></div>
-          <div class="legend">
-            <span><i class="lg lg-glove"></i> Avg mitt target (OpenCommand)</span>
-            <span><i class="lg lg-ball"></i> Avg location (Statcast)</span>
-            <span><i class="lg lg-cmitt"></i> Preflight cmitt (when available)</span>
-            <span><i class="lg lg-x"></i> Per-pitch target</span>
-            <span><i class="lg lg-dot"></i> Per-pitch location</span>
+
+          <div class="key-panel" aria-label="Pitch marker key">
+            <div class="key-title">Pitch key</div>
+            <div class="key-grid">
+              <div class="key-col">
+                <div class="key-heading">X · Swing</div>
+                <div class="key-item"><span class="key-mark key-x key-x--whiff" aria-hidden="true"></span> Red X · Whiff</div>
+                <div class="key-item"><span class="key-mark key-x key-x--hit" aria-hidden="true"></span> Green X · Hit</div>
+                <div class="key-item"><span class="key-mark key-x key-x--out" aria-hidden="true"></span> Blue X · Out</div>
+                <div class="key-item"><span class="key-mark key-x key-x--foul" aria-hidden="true"></span> Amber X · Foul</div>
+              </div>
+              <div class="key-col">
+                <div class="key-heading">Dot · Take</div>
+                <div class="key-item"><span class="key-mark key-dot key-dot--ball" aria-hidden="true"></span> Blue · Ball</div>
+                <div class="key-item"><span class="key-mark key-dot key-dot--strike" aria-hidden="true"></span> Red · Called strike</div>
+              </div>
+              <div class="key-col">
+                <div class="key-heading">Averages</div>
+                <div class="key-item"><img class="key-img" src="assets/catcher_glove.png" alt="" /> Mitt · avg target</div>
+                <div class="key-item"><img class="key-img key-img--ball" src="assets/baseball.png" alt="" /> Ball · avg location</div>
+              </div>
+            </div>
           </div>
         </main>
 
         <aside class="panel side-panel">
           <div class="panel-head">
             <h2><span class="num">1</span> Filters</h2>
-            <p class="hint">Toggle outings and pitch types. Empty selection = all. Updates live.</p>
+            <p class="hint">Toggle outings and pitch types. Empty selection keeps averages on the plot.</p>
           </div>
 
           <div class="seg" role="group" aria-label="Aggregate mode">
@@ -112,15 +127,16 @@
             <div class="chips" id="type-chips"></div>
           </div>
 
-          <div class="filter-block">
-            <label class="check">
-              <input type="checkbox" id="cmitt-only" />
-              Only pitches with Preflight cmitt overlay
-            </label>
+          <div class="panel-head tight">
+            <h2><span class="num">2</span> Pitch detail</h2>
+            <p class="hint">Click an X or dot on the chart.</p>
+          </div>
+          <div class="pitch-detail" id="pitch-detail">
+            <p class="pitch-detail-empty">No pitch selected.</p>
           </div>
 
           <div class="panel-head tight">
-            <h2><span class="num">2</span> Breakdown</h2>
+            <h2><span class="num">3</span> Breakdown</h2>
           </div>
           <p class="summary" id="summary">—</p>
           <div class="metrics" id="metrics"></div>
@@ -156,15 +172,22 @@
       </div>
 
       <footer class="foot">
-        <p>
-          Built on
-          <a href="https://github.com/tomdoyo/open-command" rel="noopener" target="_blank">tomdoyo/open-command</a>
-          (CC BY-NC-SA 4.0). Preflight catcher mitt tracking from this repo’s
-          <code>cmitt_*</code> / Savant clip pipeline. Non-commercial demo.
-        </p>
+        <p>Preflight Command demo — mitt target vs pitch location.</p>
         <p class="muted" id="foot-detail"></p>
       </footer>
     </div>
+
+    <div class="modal" id="video-modal" hidden>
+      <div class="modal-backdrop" data-close-modal></div>
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="video-modal-title">
+        <div class="modal-head">
+          <h3 id="video-modal-title">Pitch video</h3>
+          <button type="button" class="modal-close" data-close-modal aria-label="Close">×</button>
+        </div>
+        <div class="modal-body" id="video-modal-body"></div>
+      </div>
+    </div>
+
     <script src="js/command.js"></script>
   </body>
 </html>

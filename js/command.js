@@ -2,6 +2,18 @@
   "use strict";
 
   var DATA_URL = "data/yamamoto_2026_command.json";
+  var SAVANT_VIDEO = "https://baseballsavant.mlb.com/sporty-videos?playId=";
+
+  var MARKER_COLORS = {
+    whiff: "#ef4444",
+    hit: "#22c55e",
+    out: "#3b82f6",
+    foul: "#f59e0b",
+    ball: "#3b82f6",
+    called_strike: "#ef4444",
+    hbp: "#3b82f6",
+    other: "#94a3b8",
+  };
 
   var zone = {};
   var X_MIN = -36,
@@ -15,18 +27,26 @@
   var BOX_INNER = 14.5,
     BOX_OUTER = 50;
 
+  var CENTER = { x: 0, z: (18 + 42) / 2 };
+
   var state = {
     pitches: [],
     mode: "selection",
     outings: {},
     types: {},
-    cmittOnly: false,
+    lastAvgTarget: { x: CENTER.x, z: CENTER.z },
+    lastAvgLoc: { x: CENTER.x, z: CENTER.z },
+    hitRegions: [],
+    selectedId: null,
   };
 
   var canvas = document.getElementById("chart");
   var wrap = document.getElementById("chart-wrap");
   var gloveEl = document.getElementById("glove");
   var ballEl = document.getElementById("ball");
+  var detailEl = document.getElementById("pitch-detail");
+  var videoModal = document.getElementById("video-modal");
+  var videoBody = document.getElementById("video-modal-body");
 
   function mean(arr) {
     if (!arr.length) return null;
@@ -133,9 +153,7 @@
 
   function selectedPitches() {
     if (state.mode === "all") {
-      return state.pitches.filter(function (p) {
-        return !state.cmittOnly || p.has_preflight_cmitt;
-      });
+      return state.pitches.slice();
     }
     var anyOuting = Object.keys(state.outings).some(function (k) {
       return state.outings[k];
@@ -144,7 +162,6 @@
       return state.types[k];
     });
     return state.pitches.filter(function (p) {
-      if (state.cmittOnly && !p.has_preflight_cmitt) return false;
       if (anyOuting && !state.outings[p.outing]) return false;
       if (anyType && !state.types[p.pitch_type]) return false;
       return true;
@@ -156,19 +173,13 @@
       tz = [],
       lx = [],
       lz = [],
-      miss = [],
-      cx = [],
-      cz = [];
+      miss = [];
     pitches.forEach(function (p) {
       tx.push(p.target_x_in);
       tz.push(p.target_z_in);
       lx.push(p.loc_x_in);
       lz.push(p.loc_z_in);
       miss.push(p.miss_in);
-      if (p.has_preflight_cmitt && p.cmitt_x_in != null && p.cmitt_z_in != null) {
-        cx.push(p.cmitt_x_in);
-        cz.push(p.cmitt_z_in);
-      }
     });
     var atx = mean(tx),
       atz = mean(tz),
@@ -178,14 +189,56 @@
       n: pitches.length,
       avgTarget: atx == null ? null : { x: atx, z: atz },
       avgLoc: alx == null ? null : { x: alx, z: alz },
-      avgCmitt: cx.length ? { x: mean(cx), z: mean(cz) } : null,
       avgMiss: mean(miss),
       medMiss: median(miss),
-      cmittN: cx.length,
     };
   }
 
-  function drawChart(pitches, agg) {
+  function resolveAverages(agg) {
+    var muted = false;
+    var target = agg.avgTarget;
+    var loc = agg.avgLoc;
+    if (target && loc) {
+      state.lastAvgTarget = { x: target.x, z: target.z };
+      state.lastAvgLoc = { x: loc.x, z: loc.z };
+    } else {
+      muted = true;
+      target = state.lastAvgTarget || CENTER;
+      loc = state.lastAvgLoc || CENTER;
+    }
+    return { target: target, loc: loc, muted: muted };
+  }
+
+  function markerColor(p) {
+    return MARKER_COLORS[p.marker_class] || MARKER_COLORS.other;
+  }
+
+  function drawX(ctx, x, y, color, selected) {
+    var s = selected ? 6.5 : 5;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = selected ? 2.4 : 1.8;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(x - s, y - s);
+    ctx.lineTo(x + s, y + s);
+    ctx.moveTo(x + s, y - s);
+    ctx.lineTo(x - s, y + s);
+    ctx.stroke();
+  }
+
+  function drawDot(ctx, x, y, color, selected) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, selected ? 4.2 : 3.2, 0, Math.PI * 2);
+    ctx.fill();
+    if (selected) {
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+    }
+  }
+
+  function drawChart(pitches, avg) {
     var ctx = canvas.getContext("2d");
     var dpr = window.devicePixelRatio || 1;
     var sz = chartSize();
@@ -216,55 +269,43 @@
 
     drawFieldGuide(ctx);
 
-    // scatter: targets + locations
+    state.hitRegions = [];
     pitches.forEach(function (p) {
-      var t = inchesToPx(p.target_x_in, p.target_z_in);
-      var l = inchesToPx(p.loc_x_in, p.loc_z_in);
-      ctx.strokeStyle = "rgba(61, 139, 253, 0.45)";
-      ctx.lineWidth = 1.4;
-      ctx.beginPath();
-      ctx.moveTo(t.x - 3.5, t.y - 3.5);
-      ctx.lineTo(t.x + 3.5, t.y + 3.5);
-      ctx.moveTo(t.x + 3.5, t.y - 3.5);
-      ctx.lineTo(t.x - 3.5, t.y + 3.5);
-      ctx.stroke();
-      ctx.fillStyle = "rgba(248, 250, 252, 0.55)";
-      ctx.beginPath();
-      ctx.arc(l.x, l.y, 2.2, 0, Math.PI * 2);
-      ctx.fill();
+      var pt = inchesToPx(p.loc_x_in, p.loc_z_in);
+      var color = markerColor(p);
+      var selected = state.selectedId != null && String(p.id) === String(state.selectedId);
+      if (p.marker === "x") {
+        drawX(ctx, pt.x, pt.y, color, selected);
+      } else {
+        drawDot(ctx, pt.x, pt.y, color, selected);
+      }
+      state.hitRegions.push({
+        id: p.id,
+        x: pt.x,
+        y: pt.y,
+        r: p.marker === "x" ? 9 : 7,
+      });
     });
 
-    if (agg.avgTarget && agg.avgLoc) {
-      var ig = inchesToPx(agg.avgTarget.x, agg.avgTarget.z);
-      var ab = inchesToPx(agg.avgLoc.x, agg.avgLoc.z);
-      ctx.strokeStyle = "rgba(62, 207, 106, 0.55)";
-      ctx.setLineDash([4, 4]);
-      ctx.beginPath();
-      ctx.moveTo(ig.x, ig.y);
-      ctx.lineTo(ab.x, ab.y);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      gloveEl.style.left = ig.x + "px";
-      gloveEl.style.top = ig.y + "px";
-      gloveEl.style.display = "block";
-      ballEl.style.left = ab.x + "px";
-      ballEl.style.top = ab.y + "px";
-      ballEl.style.display = "block";
-    } else {
-      gloveEl.style.display = "none";
-      ballEl.style.display = "none";
-    }
+    var ig = inchesToPx(avg.target.x, avg.target.z);
+    var ab = inchesToPx(avg.loc.x, avg.loc.z);
+    ctx.strokeStyle = avg.muted ? "rgba(62, 207, 106, 0.25)" : "rgba(62, 207, 106, 0.55)";
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(ig.x, ig.y);
+    ctx.lineTo(ab.x, ab.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
 
-    if (agg.avgCmitt) {
-      var c = inchesToPx(agg.avgCmitt.x, agg.avgCmitt.z);
-      ctx.strokeStyle = "#f0b429";
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(c.x, c.y, 10, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = "rgba(240, 180, 41, 0.25)";
-      ctx.fill();
-    }
+    gloveEl.style.left = ig.x + "px";
+    gloveEl.style.top = ig.y + "px";
+    gloveEl.style.display = "block";
+    gloveEl.classList.toggle("is-muted", !!avg.muted);
+
+    ballEl.style.left = ab.x + "px";
+    ballEl.style.top = ab.y + "px";
+    ballEl.style.display = "block";
+    ballEl.classList.toggle("is-muted", !!avg.muted);
   }
 
   function fmtIn(v) {
@@ -274,6 +315,112 @@
   function fmtXZ(p) {
     if (!p) return "—";
     return p.x.toFixed(1) + " / " + p.z.toFixed(1);
+  }
+
+  function fmtCount(p) {
+    if (p.balls == null || p.strikes == null) return "—";
+    return p.balls + "–" + p.strikes;
+  }
+
+  function fmtMovement(p) {
+    if (p.hb_in == null && p.ivb_in == null) return "—";
+    var hb = p.hb_in == null ? "—" : (p.hb_in >= 0 ? "+" : "") + p.hb_in.toFixed(1) + "″ HB";
+    var ivb = p.ivb_in == null ? "—" : (p.ivb_in >= 0 ? "+" : "") + p.ivb_in.toFixed(1) + "″ IVB";
+    return hb + " · " + ivb;
+  }
+
+  function videoUrlFor(p) {
+    if (p.video_url) return p.video_url;
+    if (p.play_id) return SAVANT_VIDEO + encodeURIComponent(p.play_id);
+    return null;
+  }
+
+  function findPitch(id) {
+    for (var i = 0; i < state.pitches.length; i++) {
+      if (String(state.pitches[i].id) === String(id)) return state.pitches[i];
+    }
+    return null;
+  }
+
+  function renderPitchDetail(p) {
+    if (!p) {
+      detailEl.innerHTML = '<p class="pitch-detail-empty">No pitch selected.</p>';
+      return;
+    }
+    var url = videoUrlFor(p);
+    var rows = [
+      ["Type", p.pitch_label || p.pitch_type || "—"],
+      ["Result", p.pitch_result || p.description || "—"],
+      ["Count", fmtCount(p)],
+      ["Velo", p.velo != null ? p.velo.toFixed(1) + " mph" : "—"],
+      ["Movement", fmtMovement(p)],
+      ["Miss", fmtIn(p.miss_in)],
+      ["Outing", p.outing || "—"],
+      ["Venue", p.venue || "—"],
+    ];
+    detailEl.innerHTML =
+      '<div class="pitch-detail-grid">' +
+      rows
+        .map(function (row) {
+          return (
+            '<div class="metric"><span>' +
+            row[0] +
+            "</span><strong>" +
+            row[1] +
+            "</strong></div>"
+          );
+        })
+        .join("") +
+      "</div>" +
+      '<div class="pitch-detail-actions">' +
+      (url
+        ? '<button type="button" class="btn btn-primary" id="watch-video">Watch video</button>' +
+          '<a class="btn btn-ghost" href="' +
+          url +
+          '" target="_blank" rel="noopener">Open Savant</a>'
+        : '<button type="button" class="btn btn-primary" disabled>No play_id / video</button>') +
+      '<button type="button" class="btn btn-ghost" id="clear-pitch">Clear</button>' +
+      "</div>";
+
+    var watch = document.getElementById("watch-video");
+    if (watch && url) {
+      watch.addEventListener("click", function () {
+        openVideoModal(p, url);
+      });
+    }
+    var clear = document.getElementById("clear-pitch");
+    if (clear) {
+      clear.addEventListener("click", function () {
+        state.selectedId = null;
+        renderPitchDetail(null);
+        refresh();
+      });
+    }
+  }
+
+  function openVideoModal(p, url) {
+    videoBody.innerHTML =
+      "<p><strong>" +
+      (p.pitch_label || p.pitch_type || "Pitch") +
+      "</strong> · " +
+      (p.pitch_result || p.description || "") +
+      (p.velo != null ? " · " + p.velo.toFixed(1) + " mph" : "") +
+      "</p>" +
+      '<p>Savant clips open in a new tab (embed blocked on many hosts).</p>' +
+      '<p><a class="btn btn-primary" href="' +
+      url +
+      '" target="_blank" rel="noopener">Open video on Baseball Savant</a></p>' +
+      (p.play_id
+        ? '<p class="muted" style="margin-top:0.75rem;font-size:0.75rem;font-family:var(--mono)">play_id · ' +
+          p.play_id +
+          "</p>"
+        : '<p class="muted">No play_id available for this pitch.</p>');
+    videoModal.hidden = false;
+  }
+
+  function closeVideoModal() {
+    videoModal.hidden = true;
+    videoBody.innerHTML = "";
   }
 
   function groupBy(pitches, key) {
@@ -339,14 +486,20 @@
   function refresh() {
     var pitches = selectedPitches();
     var agg = aggregate(pitches);
-    drawChart(pitches, agg);
+    var avg = resolveAverages(agg);
+    drawChart(pitches, avg);
 
     var missEl = document.getElementById("miss-row");
-    missEl.innerHTML =
-      "Avg miss: <strong>" +
-      (agg.avgMiss == null ? "—" : agg.avgMiss.toFixed(1) + "″") +
-      "</strong>" +
-      (agg.medMiss != null ? " · median " + agg.medMiss.toFixed(1) + "″" : "");
+    if (agg.n === 0) {
+      missEl.innerHTML =
+        'Avg miss: <strong>—</strong> <span style="opacity:0.7">(no pitches in selection · showing last averages)</span>';
+    } else {
+      missEl.innerHTML =
+        "Avg miss: <strong>" +
+        (agg.avgMiss == null ? "—" : agg.avgMiss.toFixed(1) + "″") +
+        "</strong>" +
+        (agg.medMiss != null ? " · median " + agg.medMiss.toFixed(1) + "″" : "");
+    }
 
     document.getElementById("summary").textContent =
       pitches.length +
@@ -354,20 +507,17 @@
       Object.keys(groupBy(pitches, "outing")).length +
       " outings · " +
       Object.keys(groupBy(pitches, "pitch_type")).length +
-      " pitch types" +
-      (agg.cmittN ? " · " + agg.cmittN + " with Preflight cmitt" : "");
+      " pitch types";
 
     document.getElementById("metrics").innerHTML = [
       ["Pitches", String(agg.n)],
       ["Avg miss", fmtIn(agg.avgMiss)],
       ["Median miss", fmtIn(agg.medMiss)],
-      ["Avg target x/z", fmtXZ(agg.avgTarget)],
-      ["Avg location x/z", fmtXZ(agg.avgLoc)],
+      ["Avg target x/z", fmtXZ(avg.target)],
+      ["Avg location x/z", fmtXZ(avg.loc)],
       [
         "Miss vector",
-        agg.avgTarget && agg.avgLoc
-          ? hypot(agg.avgLoc.x - agg.avgTarget.x, agg.avgLoc.z - agg.avgTarget.z).toFixed(1) + "″"
-          : "—",
+        hypot(avg.loc.x - avg.target.x, avg.loc.z - avg.target.z).toFixed(1) + "″",
       ],
     ]
       .map(function (row) {
@@ -378,7 +528,41 @@
       .join("");
 
     renderTables(pitches);
+    if (state.selectedId) {
+      renderPitchDetail(findPitch(state.selectedId));
+    }
   }
+
+  function pickPitchAt(clientX, clientY) {
+    var rect = canvas.getBoundingClientRect();
+    var x = clientX - rect.left;
+    var y = clientY - rect.top;
+    var best = null;
+    var bestD = 12;
+    state.hitRegions.forEach(function (h) {
+      var d = hypot(h.x - x, h.y - y);
+      if (d <= h.r && d < bestD) {
+        bestD = d;
+        best = h;
+      }
+    });
+    return best ? findPitch(best.id) : null;
+  }
+
+  canvas.addEventListener("click", function (ev) {
+    var p = pickPitchAt(ev.clientX, ev.clientY);
+    if (!p) return;
+    state.selectedId = p.id;
+    renderPitchDetail(p);
+    refresh();
+  });
+
+  videoModal.addEventListener("click", function (ev) {
+    if (ev.target.closest("[data-close-modal]")) closeVideoModal();
+  });
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key === "Escape" && !videoModal.hidden) closeVideoModal();
+  });
 
   function buildChips() {
     var outingCounts = {};
@@ -477,11 +661,6 @@
     });
   });
 
-  document.getElementById("cmitt-only").addEventListener("change", function (ev) {
-    state.cmittOnly = !!ev.target.checked;
-    refresh();
-  });
-
   window.addEventListener("resize", function () {
     refresh();
   });
@@ -503,8 +682,29 @@
       PLATE_TIP_Z = Number(zone.plate_tip_z_in != null ? zone.plate_tip_z_in : -8.5);
       BOX_INNER = Number(zone.batter_box_inner_in != null ? zone.batter_box_inner_in : 14.5);
       BOX_OUTER = Number(zone.batter_box_outer_in != null ? zone.batter_box_outer_in : 50);
+      CENTER = { x: 0, z: (ZONE_BOT + ZONE_TOP) / 2 };
 
-      state.pitches = data.pitches || [];
+      state.pitches = (data.pitches || []).map(function (p) {
+        if (!p.marker) {
+          // defensive defaults if seed lacks marker fields
+          p.marker = "dot";
+          p.marker_class = "other";
+        }
+        if (!p.video_url && p.play_id) {
+          p.video_url = SAVANT_VIDEO + p.play_id;
+        }
+        return p;
+      });
+
+      var fullAgg = aggregate(state.pitches);
+      if (fullAgg.avgTarget && fullAgg.avgLoc) {
+        state.lastAvgTarget = fullAgg.avgTarget;
+        state.lastAvgLoc = fullAgg.avgLoc;
+      } else {
+        state.lastAvgTarget = { x: CENTER.x, z: CENTER.z };
+        state.lastAvgLoc = { x: CENTER.x, z: CENTER.z };
+      }
+
       var p = data.pitcher || {};
       document.getElementById("pitcher-name").textContent = p.name || "Pitcher";
       document.getElementById("pitcher-meta").textContent =
@@ -515,22 +715,15 @@
         (p.season || "") +
         " · " +
         state.pitches.length +
-        " pitches in seed";
-      var src = data.data_source || {};
+        " pitches";
       document.getElementById("source-pill").textContent =
-        "OpenCommand inferred · " +
-        (src.cmitt_overlap || 0) +
-        " Preflight cmitt joins · season med miss ~" +
-        (src.season_inferred_median_in || "—") +
-        "″";
+        (data.data_source && data.data_source.ui_label) ||
+        "Preflight Command · mitt vs location";
       document.getElementById("foot-detail").textContent =
-        (src.primary || "") +
-        " · License " +
-        (src.license || "CC BY-NC-SA 4.0") +
-        ". " +
-        (src.attribution || "");
+        (p.name || "Pitcher") + " · " + (p.season || "") + " season seed";
 
       buildChips();
+      renderPitchDetail(null);
       refresh();
     })
     .catch(function (err) {

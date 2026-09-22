@@ -18,13 +18,25 @@ python3 -m http.server 8765
 ## Pitcher / data
 
 - **Pitcher:** Yoshinobu Yamamoto (LAD), 2026 season seed (9 outings, ~800 pitches).
-- **Mitt targets:** [OpenCommand](https://github.com/tomdoyo/open-command) inferred targets (broadcast glove CV → camera pose → glove XYZ → empirical-Bayes target). **Not invented coordinates.**
-- **Locations:** Statcast plate location via OpenCommand `pbp_info`.
-- **Preflight cmitt:** Where `play_id` overlaps this repo’s catcher mitt tracking (`cmitt_*` from Savant/CF clips + `parts_gear`), a secondary mitt overlay is available (early-season overlap in this seed). Toggle “Only pitches with Preflight cmitt overlay.”
+- **Mitt targets:** Inferred mitt targets from broadcast glove CV (camera pose → glove XYZ → empirical-Bayes target). **Not invented coordinates.** See vendor attribution for pipeline source.
+- **Locations:** Statcast plate location.
+
+## Pitch marker key
+
+| Marker | Meaning |
+|--------|---------|
+| Red X | Swing · whiff (swinging strike / foul tip) |
+| Green X | Swing · hit (in play, no out / run) |
+| Blue X | Swing · out (in play, out) |
+| Amber X | Swing · foul |
+| Blue dot | Take · ball |
+| Red dot | Take · called strike |
+
+Mitt graphic = average target · Ball graphic = average location (always shown).
 
 ## Filters
 
-Select/deselect individual **outings** and **pitch types** (or All / None). “All outings × types” ignores chip filters. Breakdown tables and glove/ball averages update live.
+Select/deselect individual **outings** and **pitch types** (or All / None). “All outings × types” ignores chip filters. Breakdown tables and mitt/ball averages update live. Click a marker for velo, movement, count, result, and Savant video.
 
 ## Attribution / license
 
