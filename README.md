@@ -32,7 +32,7 @@ python3 -m http.server 8765
 | Blue dot | Take · ball |
 | Red dot | Take · called strike |
 
-Mitt graphic = average target · Ball graphic = average location (real independent means). Icons are true-to-scale vs the zone: mitt **12″** wide, ball **2.9″** diameter (regulation baseball from 9–9.25″ circumference ÷ π), using the same px/inch as pitch markers. Coordinates are pitcher-view inches (`+x` = pitcher's right / LHB, `+z` = up); Statcast/OpenCommand catcher-right `plate_x` is negated on ingest.
+Mitt graphic = average target · Ball graphic = average location (real independent means). Icons are true-to-scale vs the zone: mitt **9.5″** face width, ball **2.9″** diameter, using the same px/inch as pitch markers. Mitt sizing: adult catcher's mitts are ~32.5–34″ circumference (MLB gamers typically 33.5–34″; OBR 3.04 max 38″ circ / 15½″ top-to-bottom); circumference is the outer catching perimeter — a 33.5″ mitt as a modest ellipse (~12″ height) implies ~9.5″ pitcher-facing pocket/face (circular equiv 33.5/π ≈ 10.7″). Ball: regulation baseball from 9–9.25″ circumference ÷ π. Coordinates are pitcher-view inches (`+x` = pitcher's right / LHB, `+z` = up); Statcast/OpenCommand catcher-right `plate_x` is negated on ingest.
 
 ## Filters
 

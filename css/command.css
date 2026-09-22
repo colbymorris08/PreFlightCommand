@@ -197,7 +197,7 @@ a {
 }
 
 .marker--glove {
-  /* width set in JS: 12″ × px/in from zone scale */
+  /* width set in JS: 9.5″ face × px/in from zone scale */
   width: 12%;
   height: auto;
   z-index: 3;

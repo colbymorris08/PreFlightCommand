@@ -30,10 +30,13 @@
     BOX_OUTER = 50;
 
   // True-to-scale icons vs strike-zone inches (same px/in as pitch markers).
-  // Mitt: ~12″ catcher's mitt footprint on the zone.
-  // Ball: regulation baseball diameter ≈ 2.9″ (9–9.25″ circumference / π);
-  //       no visibility bump — keep official size so the plot stays honest.
-  var GLOVE_WIDTH_IN = 12;
+  // Mitt face width: adult catcher's mitts are sold by circumference (~32.5–34″;
+  // MLB gamers typically 33.5–34″; OBR 3.04 caps at 38″ circ / 15½″ top-to-bottom).
+  // Circumference is the outer catching perimeter (not fielder heel-to-tip). A 33.5″
+  // mitt as a modest ellipse (~12″ height, within the legal max) implies ~9.5″ face
+  // width; circular equiv is 33.5/π ≈ 10.7″ — we plot the pitcher-facing pocket/face.
+  // Ball: regulation baseball diameter ≈ 2.9″ (9–9.25″ circumference / π).
+  var GLOVE_WIDTH_IN = 9.5;
   var BALL_DIAMETER_IN = 2.9;
 
   var CENTER = { x: 0, z: (18 + 42) / 2 };
