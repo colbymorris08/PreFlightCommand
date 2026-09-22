@@ -34,8 +34,10 @@
     mode: "selection",
     outings: {},
     types: {},
+    // Pitcher-view inches: +x = pitcher's right (3B / LHB), +z = up.
+    // Glove sits at avg target; ball at target + mean miss = avg plate loc.
     lastAvgTarget: { x: CENTER.x, z: CENTER.z },
-    lastAvgLoc: { x: CENTER.x, z: CENTER.z },
+    lastAvgMiss: { x: 0, z: 0 },
     hitRegions: [],
     selectedId: null,
   };
@@ -121,8 +123,9 @@
       ctx.textBaseline = "middle";
       ctx.fillText(label, (a.x + b.x) / 2, (a.y + b.y) / 2);
     }
-    drawBox(-Math.min(BOX_OUTER, X_MAX - 0.5), -BOX_INNER, "LHB");
-    drawBox(BOX_INNER, Math.min(BOX_OUTER, X_MAX - 0.5), "RHB");
+    // Pitcher view: screen-left (−x) = your left = 1B = RHB; +x = LHB.
+    drawBox(-Math.min(BOX_OUTER, X_MAX - 0.5), -BOX_INNER, "RHB");
+    drawBox(BOX_INNER, Math.min(BOX_OUTER, X_MAX - 0.5), "LHB");
 
     var frontL = toPx(-ZONE_HALF, 0);
     var frontR = toPx(ZONE_HALF, 0);
@@ -173,22 +176,50 @@
       tz = [],
       lx = [],
       lz = [],
+      mx = [],
+      mz = [],
       miss = [];
     pitches.forEach(function (p) {
-      tx.push(p.target_x_in);
-      tz.push(p.target_z_in);
-      lx.push(p.loc_x_in);
-      lz.push(p.loc_z_in);
-      miss.push(p.miss_in);
+      var txi = Number(p.target_x_in);
+      var tzi = Number(p.target_z_in);
+      var lxi = Number(p.loc_x_in);
+      var lzi = Number(p.loc_z_in);
+      if (!isFinite(txi) || !isFinite(tzi) || !isFinite(lxi) || !isFinite(lzi)) return;
+      tx.push(txi);
+      tz.push(tzi);
+      lx.push(lxi);
+      lz.push(lzi);
+      // Signed miss in pitcher-view inches: loc − target (left = −x, high = +z).
+      mx.push(lxi - txi);
+      mz.push(lzi - tzi);
+      miss.push(
+        p.miss_in != null && isFinite(Number(p.miss_in))
+          ? Number(p.miss_in)
+          : hypot(lxi - txi, lzi - tzi)
+      );
     });
     var atx = mean(tx),
       atz = mean(tz),
       alx = mean(lx),
-      alz = mean(lz);
+      alz = mean(lz),
+      amx = mean(mx),
+      amz = mean(mz);
+    var avgTarget = atx == null ? null : { x: atx, z: atz };
+    // Ball = avg plate location = avg(target) + avg(miss vector). Prefer
+    // target + mean miss so the mitt is clearly the origin of the offset.
+    var avgMissVec =
+      amx == null ? null : { x: amx, z: amz };
+    var avgLoc =
+      avgTarget && avgMissVec
+        ? { x: avgTarget.x + avgMissVec.x, z: avgTarget.z + avgMissVec.z }
+        : alx == null
+          ? null
+          : { x: alx, z: alz };
     return {
       n: pitches.length,
-      avgTarget: atx == null ? null : { x: atx, z: atz },
-      avgLoc: alx == null ? null : { x: alx, z: alz },
+      avgTarget: avgTarget,
+      avgLoc: avgLoc,
+      avgMissVec: avgMissVec,
       avgMiss: mean(miss),
       medMiss: median(miss),
     };
@@ -197,16 +228,18 @@
   function resolveAverages(agg) {
     var muted = false;
     var target = agg.avgTarget;
+    var missVec = agg.avgMissVec;
     var loc = agg.avgLoc;
-    if (target && loc) {
+    if (target && missVec && loc) {
       state.lastAvgTarget = { x: target.x, z: target.z };
-      state.lastAvgLoc = { x: loc.x, z: loc.z };
+      state.lastAvgMiss = { x: missVec.x, z: missVec.z };
     } else {
       muted = true;
       target = state.lastAvgTarget || CENTER;
-      loc = state.lastAvgLoc || CENTER;
+      missVec = state.lastAvgMiss || { x: 0, z: 0 };
+      loc = { x: target.x + missVec.x, z: target.z + missVec.z };
     }
-    return { target: target, loc: loc, muted: muted };
+    return { target: target, loc: loc, missVec: missVec, muted: muted };
   }
 
   function markerColor(p) {
@@ -287,10 +320,12 @@
       });
     });
 
+    // Glove at avg target (origin); ball at target + mean miss (= avg loc).
     var ig = inchesToPx(avg.target.x, avg.target.z);
     var ab = inchesToPx(avg.loc.x, avg.loc.z);
-    ctx.strokeStyle = avg.muted ? "rgba(62, 207, 106, 0.25)" : "rgba(62, 207, 106, 0.55)";
-    ctx.setLineDash([4, 4]);
+    ctx.strokeStyle = avg.muted ? "rgba(62, 207, 106, 0.25)" : "rgba(62, 207, 106, 0.75)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
     ctx.beginPath();
     ctx.moveTo(ig.x, ig.y);
     ctx.lineTo(ab.x, ab.y);
@@ -306,6 +341,25 @@
     ballEl.style.top = ab.y + "px";
     ballEl.style.display = "block";
     ballEl.classList.toggle("is-muted", !!avg.muted);
+  }
+
+  function fmtSignedIn(v) {
+    if (v == null || isNaN(v)) return "—";
+    return (v >= 0 ? "+" : "") + v.toFixed(1) + "″";
+  }
+
+  function fmtMissVec(v) {
+    if (!v) return "—";
+    // Pitcher view: −x = left (1B), +x = right (3B), +z = high.
+    var h =
+      Math.abs(v.x) < 0.05
+        ? "0.0″ H"
+        : fmtSignedIn(v.x).replace("″", "") + "″ " + (v.x < 0 ? "left" : "right");
+    var vert =
+      Math.abs(v.z) < 0.05
+        ? "0.0″ V"
+        : fmtSignedIn(v.z).replace("″", "") + "″ " + (v.z >= 0 ? "high" : "low");
+    return h + " · " + vert;
   }
 
   function fmtIn(v) {
@@ -494,11 +548,19 @@
       missEl.innerHTML =
         'Avg miss: <strong>—</strong> <span style="opacity:0.7">(no pitches in selection · showing last averages)</span>';
     } else {
+      var vec = avg.missVec;
+      var vecMag =
+        vec != null ? hypot(vec.x, vec.z) : hypot(avg.loc.x - avg.target.x, avg.loc.z - avg.target.z);
       missEl.innerHTML =
         "Avg miss: <strong>" +
         (agg.avgMiss == null ? "—" : agg.avgMiss.toFixed(1) + "″") +
         "</strong>" +
-        (agg.medMiss != null ? " · median " + agg.medMiss.toFixed(1) + "″" : "");
+        (agg.medMiss != null ? " · median " + agg.medMiss.toFixed(1) + "″" : "") +
+        '<div class="miss-vec">Miss vector (glove → ball): <strong>' +
+        fmtMissVec(vec) +
+        "</strong> · |" +
+        vecMag.toFixed(1) +
+        "″|</div>";
     }
 
     document.getElementById("summary").textContent =
@@ -511,14 +573,11 @@
 
     document.getElementById("metrics").innerHTML = [
       ["Pitches", String(agg.n)],
-      ["Avg miss", fmtIn(agg.avgMiss)],
-      ["Median miss", fmtIn(agg.medMiss)],
+      ["Avg miss |d|", fmtIn(agg.avgMiss)],
+      ["Median miss |d|", fmtIn(agg.medMiss)],
+      ["Miss vector", fmtMissVec(avg.missVec)],
       ["Avg target x/z", fmtXZ(avg.target)],
       ["Avg location x/z", fmtXZ(avg.loc)],
-      [
-        "Miss vector",
-        hypot(avg.loc.x - avg.target.x, avg.loc.z - avg.target.z).toFixed(1) + "″",
-      ],
     ]
       .map(function (row) {
         return (
@@ -697,12 +756,12 @@
       });
 
       var fullAgg = aggregate(state.pitches);
-      if (fullAgg.avgTarget && fullAgg.avgLoc) {
+      if (fullAgg.avgTarget && fullAgg.avgMissVec) {
         state.lastAvgTarget = fullAgg.avgTarget;
-        state.lastAvgLoc = fullAgg.avgLoc;
+        state.lastAvgMiss = fullAgg.avgMissVec;
       } else {
         state.lastAvgTarget = { x: CENTER.x, z: CENTER.z };
-        state.lastAvgLoc = { x: CENTER.x, z: CENTER.z };
+        state.lastAvgMiss = { x: 0, z: 0 };
       }
 
       var p = data.pitcher || {};

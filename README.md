@@ -32,7 +32,7 @@ python3 -m http.server 8765
 | Blue dot | Take · ball |
 | Red dot | Take · called strike |
 
-Mitt graphic = average target · Ball graphic = average location (always shown).
+Mitt graphic = average target · Ball graphic = average location = target + mean miss vector (always shown). Coordinates are pitcher-view inches (`+x` = pitcher's right / LHB, `+z` = up); Statcast/OpenCommand catcher-right `plate_x` is negated on ingest.
 
 ## Filters
 
