@@ -1,7 +1,18 @@
 (function () {
   "use strict";
 
-  var DATA_URL = "data/yamamoto_2026_command.json";
+  var PLAYERS = [
+    {
+      id: "yamamoto",
+      name: "Yoshinobu Yamamoto",
+      url: "data/yamamoto_2026_command.json",
+    },
+    {
+      id: "woo",
+      name: "Bryan Woo",
+      url: "data/woo_2026_command.json",
+    },
+  ];
   var SAVANT_VIDEO = "https://baseballsavant.mlb.com/sporty-videos?playId=";
 
   var MARKER_COLORS = {
@@ -53,11 +64,13 @@
   ];
 
   var state = {
+    playerId: "yamamoto",
     pitches: [],
     mode: "selection",
     outings: {},
     types: {},
     results: {},
+    bases: { on_1b: "any", on_2b: "any", on_3b: "any" },
     // Pitcher-view inches: +x = pitcher's right (3B / LHB), +z = up.
     // Glove = avg target; ball = avg location (real means only).
     lastAvgTarget: { x: CENTER.x, z: CENTER.z },
@@ -65,6 +78,7 @@
     lastAvgMiss: { x: 0, z: 0 },
     hitRegions: [],
     selectedId: null,
+    chipsBound: false,
   };
 
   RESULT_KEYS.forEach(function (k) {
@@ -78,6 +92,7 @@
   var detailEl = document.getElementById("pitch-detail");
   var videoModal = document.getElementById("video-modal");
   var videoBody = document.getElementById("video-modal-body");
+  var playerSelect = document.getElementById("player-select");
 
   function mean(arr) {
     if (!arr.length) return null;
@@ -191,6 +206,19 @@
     return !!state.results[cls];
   }
 
+  function baseAllowed(p) {
+    function ok(key) {
+      var want = state.bases[key] || "any";
+      if (want === "any") return true;
+      var v = p[key];
+      if (v == null) return false;
+      if (want === "occupied") return !!v;
+      if (want === "empty") return !v;
+      return true;
+    }
+    return ok("on_1b") && ok("on_2b") && ok("on_3b");
+  }
+
   function selectedPitches() {
     var pool =
       state.mode === "all"
@@ -208,7 +236,7 @@
               return true;
             });
           })();
-    return pool.filter(resultAllowed);
+    return pool.filter(resultAllowed).filter(baseAllowed);
   }
 
   function aggregate(pitches) {
@@ -570,6 +598,14 @@
     return null;
   }
 
+  function fmtBases(p) {
+    function cell(v, label) {
+      if (v == null) return label + "?";
+      return label + (v ? "●" : "○");
+    }
+    return cell(p.on_1b, "1") + " " + cell(p.on_2b, "2") + " " + cell(p.on_3b, "3");
+  }
+
   function renderPitchDetail(p) {
     if (!p) {
       detailEl.innerHTML = '<p class="pitch-detail-empty">No pitch selected.</p>';
@@ -580,6 +616,7 @@
       ["Type", p.pitch_label || p.pitch_type || "—"],
       ["Result", p.pitch_result || p.description || "—"],
       ["Count", fmtCount(p)],
+      ["Bases", fmtBases(p)],
       ["Velo", p.velo != null ? p.velo.toFixed(1) + " mph" : "—"],
       ["Movement", fmtMovement(p)],
       ["Miss", fmtIn(p.miss_in)],
@@ -803,6 +840,8 @@
   });
 
   function buildChips() {
+    state.outings = {};
+    state.types = {};
     var outingCounts = {};
     var typeCounts = {};
     state.pitches.forEach(function (p) {
@@ -848,21 +887,32 @@
       })
       .join("");
 
-    outingRoot.addEventListener("click", function (ev) {
-      var btn = ev.target.closest("[data-outing]");
-      if (!btn) return;
-      var key = btn.getAttribute("data-outing");
-      state.outings[key] = !state.outings[key];
-      btn.classList.toggle("is-active", !!state.outings[key]);
-      refresh();
-    });
-    typeRoot.addEventListener("click", function (ev) {
-      var btn = ev.target.closest("[data-type]");
-      if (!btn) return;
-      var key = btn.getAttribute("data-type");
-      state.types[key] = !state.types[key];
-      btn.classList.toggle("is-active", !!state.types[key]);
-      refresh();
+    if (!state.chipsBound) {
+      outingRoot.addEventListener("click", function (ev) {
+        var btn = ev.target.closest("[data-outing]");
+        if (!btn) return;
+        var key = btn.getAttribute("data-outing");
+        state.outings[key] = !state.outings[key];
+        btn.classList.toggle("is-active", !!state.outings[key]);
+        refresh();
+      });
+      typeRoot.addEventListener("click", function (ev) {
+        var btn = ev.target.closest("[data-type]");
+        if (!btn) return;
+        var key = btn.getAttribute("data-type");
+        state.types[key] = !state.types[key];
+        btn.classList.toggle("is-active", !!state.types[key]);
+        refresh();
+      });
+      state.chipsBound = true;
+    }
+  }
+
+  function resetBaseFilters() {
+    state.bases = { on_1b: "any", on_2b: "any", on_3b: "any" };
+    ["base-1b", "base-2b", "base-3b"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.value = "any";
     });
   }
 
@@ -887,6 +937,18 @@
   });
   document.getElementById("types-none").addEventListener("click", function () {
     setAll(state.types, "#type-chips", false);
+  });
+  document.getElementById("bases-any").addEventListener("click", function () {
+    resetBaseFilters();
+    refresh();
+  });
+
+  document.querySelectorAll("[data-base]").forEach(function (sel) {
+    sel.addEventListener("change", function () {
+      var key = sel.getAttribute("data-base");
+      state.bases[key] = sel.value || "any";
+      refresh();
+    });
   });
 
   document.querySelectorAll("[data-mode]").forEach(function (btn) {
@@ -938,76 +1000,117 @@
     refresh();
   });
 
-  fetch(DATA_URL)
-    .then(function (r) {
-      if (!r.ok) throw new Error("Failed to load " + DATA_URL);
-      return r.json();
-    })
-    .then(function (data) {
-      zone = data.zone || {};
-      // Keep plate / zone geometry from seed, but use a tighter display window
-      // so average mitt→ball separation is readable (~14–16 px/in).
-      ZONE_HALF = Number(zone.plate_half_width_in != null ? zone.plate_half_width_in : 8.5);
-      ZONE_BOT = Number(zone.zone_bot_in != null ? zone.zone_bot_in : 18);
-      ZONE_TOP = Number(zone.zone_top_in != null ? zone.zone_top_in : 42);
-      PLATE_TIP_Z = Number(zone.plate_tip_z_in != null ? zone.plate_tip_z_in : -8.5);
-      BOX_INNER = Number(zone.batter_box_inner_in != null ? zone.batter_box_inner_in : 14.5);
-      BOX_OUTER = Number(zone.batter_box_outer_in != null ? zone.batter_box_outer_in : 50);
-      X_MIN = -18;
-      X_MAX = 18;
-      Z_MIN = 6;
-      Z_MAX = 46;
-      CENTER = { x: 0, z: (ZONE_BOT + ZONE_TOP) / 2 };
+  function playerById(id) {
+    for (var i = 0; i < PLAYERS.length; i++) {
+      if (PLAYERS[i].id === id) return PLAYERS[i];
+    }
+    return PLAYERS[0];
+  }
 
-      state.pitches = (data.pitches || []).map(function (p) {
-        if (!p.marker) {
-          // defensive defaults if seed lacks marker fields
-          p.marker = "dot";
-          p.marker_class = "other";
-        }
-        if (!p.video_url && p.play_id) {
-          p.video_url = SAVANT_VIDEO + p.play_id;
-        }
-        return p;
-      });
+  function applyDataset(data) {
+    zone = data.zone || {};
+    // Keep plate / zone geometry from seed, but use a tighter display window
+    // so average mitt→ball separation is readable (~14–16 px/in).
+    ZONE_HALF = Number(zone.plate_half_width_in != null ? zone.plate_half_width_in : 8.5);
+    ZONE_BOT = Number(zone.zone_bot_in != null ? zone.zone_bot_in : 18);
+    ZONE_TOP = Number(zone.zone_top_in != null ? zone.zone_top_in : 42);
+    PLATE_TIP_Z = Number(zone.plate_tip_z_in != null ? zone.plate_tip_z_in : -8.5);
+    BOX_INNER = Number(zone.batter_box_inner_in != null ? zone.batter_box_inner_in : 14.5);
+    BOX_OUTER = Number(zone.batter_box_outer_in != null ? zone.batter_box_outer_in : 50);
+    X_MIN = -18;
+    X_MAX = 18;
+    Z_MIN = 6;
+    Z_MAX = 46;
+    CENTER = { x: 0, z: (ZONE_BOT + ZONE_TOP) / 2 };
 
-      var fullAgg = aggregate(state.pitches);
-      if (fullAgg.avgTarget && fullAgg.avgLoc) {
-        state.lastAvgTarget = fullAgg.avgTarget;
-        state.lastAvgLoc = fullAgg.avgLoc;
-        state.lastAvgMiss = fullAgg.avgMissVec || {
-          x: fullAgg.avgLoc.x - fullAgg.avgTarget.x,
-          z: fullAgg.avgLoc.z - fullAgg.avgTarget.z,
-        };
-      } else {
-        state.lastAvgTarget = { x: CENTER.x, z: CENTER.z };
-        state.lastAvgLoc = { x: CENTER.x, z: CENTER.z };
-        state.lastAvgMiss = { x: 0, z: 0 };
+    state.pitches = (data.pitches || []).map(function (p) {
+      if (!p.marker) {
+        p.marker = "dot";
+        p.marker_class = "other";
       }
-
-      var p = data.pitcher || {};
-      document.getElementById("pitcher-name").textContent = p.name || "Pitcher";
-      document.getElementById("pitcher-meta").textContent =
-        (p.team || "") +
-        " · " +
-        (p.throws || "") +
-        "HP · " +
-        (p.season || "") +
-        " · " +
-        state.pitches.length +
-        " pitches";
-      document.getElementById("source-pill").textContent =
-        (data.data_source && data.data_source.ui_label) ||
-        "Preflight Command · mitt vs location";
-      document.getElementById("foot-detail").textContent =
-        (p.name || "Pitcher") + " · " + (p.season || "") + " season seed";
-
-      buildChips();
-      renderPitchDetail(null);
-      refresh();
-    })
-    .catch(function (err) {
-      document.getElementById("pitcher-name").textContent = "Failed to load data";
-      document.getElementById("pitcher-meta").textContent = String(err);
+      if (!p.video_url && p.play_id) {
+        p.video_url = SAVANT_VIDEO + p.play_id;
+      }
+      return p;
     });
+    state.selectedId = null;
+
+    var fullAgg = aggregate(state.pitches);
+    if (fullAgg.avgTarget && fullAgg.avgLoc) {
+      state.lastAvgTarget = fullAgg.avgTarget;
+      state.lastAvgLoc = fullAgg.avgLoc;
+      state.lastAvgMiss = fullAgg.avgMissVec || {
+        x: fullAgg.avgLoc.x - fullAgg.avgTarget.x,
+        z: fullAgg.avgLoc.z - fullAgg.avgTarget.z,
+      };
+    } else {
+      state.lastAvgTarget = { x: CENTER.x, z: CENTER.z };
+      state.lastAvgLoc = { x: CENTER.x, z: CENTER.z };
+      state.lastAvgMiss = { x: 0, z: 0 };
+    }
+
+    var p = data.pitcher || {};
+    var outingN = Object.keys(
+      state.pitches.reduce(function (acc, x) {
+        acc[x.outing] = 1;
+        return acc;
+      }, {})
+    ).length;
+    document.getElementById("pitcher-name").textContent = p.name || "Pitcher";
+    document.getElementById("pitcher-meta").textContent =
+      (p.team || "") +
+      " · " +
+      (p.throws || "") +
+      "HP · " +
+      (p.season || "") +
+      " · " +
+      state.pitches.length +
+      " pitches · " +
+      outingN +
+      " outings";
+    document.getElementById("source-pill").textContent =
+      (data.data_source && data.data_source.ui_label) ||
+      "Preflight Command · mitt vs location";
+    var sampleNote =
+      (data.data_source && data.data_source.sample) ||
+      ((p.name || "Pitcher") + " · " + (p.season || "") + " season");
+    document.getElementById("foot-detail").textContent = sampleNote;
+
+    resetBaseFilters();
+    buildChips();
+    renderPitchDetail(null);
+    refresh();
+  }
+
+  function loadPlayer(id) {
+    var player = playerById(id);
+    state.playerId = player.id;
+    if (playerSelect && playerSelect.value !== player.id) {
+      playerSelect.value = player.id;
+    }
+    document.getElementById("pitcher-name").textContent = "Loading…";
+    document.getElementById("pitcher-meta").textContent = player.name;
+    return fetch(player.url)
+      .then(function (r) {
+        if (!r.ok) throw new Error("Failed to load " + player.url);
+        return r.json();
+      })
+      .then(applyDataset)
+      .catch(function (err) {
+        document.getElementById("pitcher-name").textContent = "Failed to load data";
+        document.getElementById("pitcher-meta").textContent = String(err);
+      });
+  }
+
+  if (playerSelect) {
+    playerSelect.addEventListener("change", function () {
+      loadPlayer(playerSelect.value);
+    });
+  }
+
+  var initial =
+    (typeof location !== "undefined" &&
+      new URLSearchParams(location.search).get("pitcher")) ||
+    "yamamoto";
+  loadPlayer(initial);
 })();

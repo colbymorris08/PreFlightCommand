@@ -1,6 +1,6 @@
 # Preflight Command
 
-Interactive **mitt target vs pitch location** tracker for Preflight, seeded with one 2026 MLB pitcher.
+Interactive **mitt target vs pitch location** tracker for Preflight.
 
 ## Live
 
@@ -15,11 +15,20 @@ python3 -m http.server 8765
 # open http://localhost:8765/
 ```
 
-## Pitcher / data
+## Pitchers / data
 
-- **Pitcher:** Yoshinobu Yamamoto (LAD), 2026 season seed (9 outings, ~800 pitches).
+Use the **Pitcher** dropdown to switch players. Switching reloads that pitcher’s pitches and resets outing, pitch-type, and baserunner filters.
+
+| Pitcher | Sample | Outings | Pitches | Targets |
+|---------|--------|---------|---------|---------|
+| Yoshinobu Yamamoto (LAD) | 9-outing 2026 demo seed (same outings as prior release) | 9 | ~824 | OpenCommand inferred mitt |
+| Bryan Woo (SEA) | **Full 2026 regular-season starts** with OC coverage (not All-Star only) | 22 | ~1780 | OpenCommand inferred mitt |
+
 - **Mitt targets:** Inferred mitt targets from broadcast glove CV (camera pose → glove XYZ → empirical-Bayes target). **Not invented coordinates.** See vendor attribution for pipeline source.
-- **Locations:** Statcast plate location.
+- **Locations:** Statcast plate location (pitcher-view; catcher-right `plate_x` negated on ingest).
+- **Baserunners:** MLB Stats API live-feed occupancy before each pitch (`on_1b` / `on_2b` / `on_3b`), Statcast-equivalent.
+
+Two July Woo starts (`2026-07-18`, `2026-07-25`) appear in OpenCommand pbp but lack ok+plausible inferred targets, so they are omitted. Later September Statcast starts are outside the current OpenCommand 2026 release window.
 
 ## Pitch marker key
 
@@ -36,7 +45,9 @@ Mitt graphic = average target · Ball graphic = average location (real independe
 
 ## Filters
 
-Select/deselect individual **outings** and **pitch types** (or All / None). “All outings × types” ignores chip filters. Breakdown tables and mitt/ball averages update live. Click a marker for velo, movement, count, result, and Savant video.
+- **Outings** and **pitch types** — select/deselect chips (or All / None). “All outings × types” ignores chip filters.
+- **Men on base** — 1st / 2nd / 3rd selects: Any / Empty / Occupied. Filters combine with outing, pitch-type, and outcome-key toggles.
+- Breakdown tables and mitt/ball averages update live. Click a marker for velo, movement, count, bases, result, and Savant video.
 
 ## Attribution / license
 
@@ -44,6 +55,13 @@ This UI adapts architecture and **data** from **tomdoyo/open-command** (OpenComm
 
 Pipeline reference sources are vendored under `vendor/open-command/src/`.
 
-## Rebuild seed
+## Rebuild seeds
 
-Requires Hugging Face download of OpenCommand 2026 `targets.csv.gz` + `pbp_info.csv.gz` into `data/opencommand/`, plus local `pitch-tips/runs/catcher_*/features.csv` for cmitt joins. Re-run the seed builder script used to generate `data/yamamoto_2026_command.json`.
+Requires Hugging Face download of OpenCommand 2026 `targets.csv.gz` + `pbp_info.csv.gz` into `data/opencommand/`. Live-feed caches land in `data/_live_feed_cache/`.
+
+```bash
+cd pitch-tips/command-tracking
+python3 scripts/build_command_seed.py --pitcher both --outings-from-existing
+# Woo = all OC-covered 2026 starts; Yamamoto keeps the 9-outing demo set
+# python3 scripts/build_command_seed.py --pitcher yamamoto --all-outings
+```

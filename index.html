@@ -30,8 +30,13 @@
       </header>
 
       <section class="player-bar" id="player-bar">
-        <div>
-          <div class="eyebrow">2026 season seed</div>
+        <div class="player-bar-main">
+          <div class="eyebrow">2026 season</div>
+          <label class="player-select-label" for="player-select">Pitcher</label>
+          <select id="player-select" class="player-select" aria-label="Select pitcher">
+            <option value="yamamoto">Yoshinobu Yamamoto</option>
+            <option value="woo">Bryan Woo</option>
+          </select>
           <h1 id="pitcher-name">Loading…</h1>
           <p class="meta" id="pitcher-meta"></p>
         </div>
@@ -148,6 +153,42 @@
               </div>
             </div>
             <div class="chips" id="type-chips"></div>
+          </div>
+
+          <div class="filter-block">
+            <div class="filter-row">
+              <span class="filter-label">Men on base</span>
+              <div class="filter-actions">
+                <button type="button" class="linkish" id="bases-any">Any</button>
+              </div>
+            </div>
+            <div class="base-filters" role="group" aria-label="Baserunner filters">
+              <label class="base-field">
+                <span>1st</span>
+                <select id="base-1b" data-base="on_1b" aria-label="First base">
+                  <option value="any">Any</option>
+                  <option value="empty">Empty</option>
+                  <option value="occupied">Occupied</option>
+                </select>
+              </label>
+              <label class="base-field">
+                <span>2nd</span>
+                <select id="base-2b" data-base="on_2b" aria-label="Second base">
+                  <option value="any">Any</option>
+                  <option value="empty">Empty</option>
+                  <option value="occupied">Occupied</option>
+                </select>
+              </label>
+              <label class="base-field">
+                <span>3rd</span>
+                <select id="base-3b" data-base="on_3b" aria-label="Third base">
+                  <option value="any">Any</option>
+                  <option value="empty">Empty</option>
+                  <option value="occupied">Occupied</option>
+                </select>
+              </label>
+            </div>
+            <p class="hint tight-hint">Statcast-equivalent occupancy before the pitch. Combines with outing, type, and key filters.</p>
           </div>
 
           <div class="panel-head tight">

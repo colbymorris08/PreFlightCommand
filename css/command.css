@@ -87,6 +87,10 @@ a {
   border-radius: 14px;
 }
 
+.player-bar-main {
+  min-width: min(100%, 22rem);
+}
+
 .eyebrow {
   font-size: 0.72rem;
   font-weight: 700;
@@ -95,10 +99,87 @@ a {
   color: var(--muted);
 }
 
+.player-select-label {
+  display: block;
+  margin-top: 0.55rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.player-select {
+  display: block;
+  width: min(100%, 22rem);
+  margin-top: 0.35rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(61, 139, 253, 0.45);
+  background: #0b1220;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 1.05rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #8b97a8 50%),
+    linear-gradient(135deg, #8b97a8 50%, transparent 50%);
+  background-position: calc(100% - 18px) calc(50% - 3px), calc(100% - 12px) calc(50% - 3px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.player-select:focus {
+  outline: 2px solid rgba(61, 139, 253, 0.55);
+  outline-offset: 2px;
+}
+
 .player-bar h1 {
-  margin: 0.15rem 0 0.2rem;
-  font-size: 1.55rem;
+  margin: 0.55rem 0 0.2rem;
+  font-size: 1.35rem;
   letter-spacing: -0.02em;
+}
+
+.base-filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.base-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.base-field select {
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #0b1220;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  cursor: pointer;
+}
+
+.base-field select:focus {
+  outline: 2px solid rgba(61, 139, 253, 0.45);
+  outline-offset: 1px;
+}
+
+.hint.tight-hint {
+  margin: 0.55rem 0 0;
 }
 
 .meta {

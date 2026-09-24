@@ -1,3 +1,5 @@
 data/opencommand/targets.csv.gz
 data/opencommand/pbp_info.csv.gz
+data/_live_feed_cache/
+data/_cache_statcast_*.csv
 .DS_Store
