@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Preflight Lite — Computer Vision Pitch Anticipation &amp; Mechanical Discrepancy Showcase</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;650;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="css/site.css?v=20260901p11" />
+    <link rel="stylesheet" href="css/lite.css?v=20260901p11" />
+      <script src="js/auth.js?v=20260901p11"></script>
+  </head>
+  <body data-page="lite_home">
+    <div class="lang-toolbar-wrap">
+      <div class="wrap lang-toolbar">
+        <div class="lang-toolbar-left">
+          <span class="globe-icon">🌐</span>
+          <span data-i18n="lang_toolbar_label">Language / 言語 / 언어 / Idioma / 語言:</span>
+        </div>
+        <div class="lang-btn-group" id="lite-lang-switcher">
+          <button type="button" class="lang-btn active" data-lang="en">
+            <span class="flag">🇺🇸</span> <span>English</span>
+          </button>
+          <button type="button" class="lang-btn" data-lang="ja">
+            <span class="flag">🇯🇵</span> <span>日本語</span>
+          </button>
+          <button type="button" class="lang-btn" data-lang="ko">
+            <span class="flag">🇰🇷</span> <span>한국어</span>
+          </button>
+          <button type="button" class="lang-btn" data-lang="es">
+            <span class="flag">🇲🇽 🇩🇴</span> <span>Español</span>
+          </button>
+          <button type="button" class="lang-btn" data-lang="zh-TW">
+            <span class="flag">🇹🇼</span> <span>繁體中文</span>
+          </button>
+        </div>
+      </div>
+    </div>
+    <div class="wrap">
+      <header class="topbar">
+        <a class="brand" href="lite.html">
+          <strong data-i18n="brand_title">Preflight</strong>
+          <em data-i18n="brand_sub">Computer Vision · Lite Showcase</em>
+        </a>
+        <nav class="nav">
+          <a href="lite.html" aria-current="page" data-i18n="nav_overview">Overview</a>
+          <a href="lite_teams.html" data-i18n="nav_coverage">Coverage Board</a>
+          <a href="lite_board.html" data-i18n="nav_leads">Ranked Leads</a>
+          <a href="lite_pricing.html" data-i18n="nav_pricing">Pricing &amp; Access</a>
+          <a href="lite_methodology.html" data-i18n="nav_arch">Architecture &amp; CV</a>
+          <a href="#" class="lite-nav-cta trigger-pilot-modal" data-i18n="nav_request_pilot">Request Pilot Access</a>
+        </nav>
+      </header>
+
+      <section class="hero">
+        <div class="eyebrow" data-i18n="hero_eyebrow">Public Showcase · MLB &amp; College Advance Scouting Intel</div>
+        <div class="hero-grid">
+          <div>
+            <h1 data-i18n="hero_h1">Computer Vision "Spot the Difference" Engine for Pitch Tipping &amp; Catcher Setup Cues.</h1>
+            <p data-i18n="hero_desc">
+              Preflight automates high-resolution landmark and bounding-box tracking to detect pitch-to-pitch mechanical variation—glove set height, forearm exposure, torso posture, hand depth, and catcher target positioning—strictly before ball release.
+            </p>
+            <div class="hero-coverage-callout" style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.28); border-radius:6px; padding:0.85rem 1rem; margin:1rem 0; font-size:0.88rem; line-height:1.55;">
+              <div style="margin-bottom:0.35rem;"><strong style="color:var(--good);" data-i18n="hero_cov_curr_lbl">Current Completed Coverage:</strong> <span data-i18n="hero_cov_curr_val">100% of all NL West pitching staffs &amp; rotation arms completed and modeled.</span></div>
+              <div><strong style="color:var(--accent);" data-i18n="hero_cov_cap_lbl">Full Pipeline Capabilities:</strong> <span data-i18n="hero_cov_cap_val">Full-scale pipeline capabilities to track and model your entire respective league—MLB (all 30 clubs), NCAA Division I College Baseball, NPB (Japan), KBO (Korea), CPBL (Taiwan), Mexico (LMB), and Winter Leagues directly from Synergy, TrackMan, or stadium video feeds.</span></div>
+            </div>
+            <div class="cta-row">
+              <a class="btn" href="lite_player.html?id=roupp" data-i18n="hero_btn_roupp">Explore Showcase: Landen Roupp →</a>
+              <a class="btn ghost" href="lite_player.html?id=chase_burns" data-i18n="hero_btn_burns">NCAA: Chase Burns →</a>
+              <a class="btn ghost" href="lite_player.html?id=roki_sasaki" data-i18n="hero_btn_sasaki">NPB: Roki Sasaki 🇯🇵 →</a>
+              <a class="btn ghost" href="lite_player.html?id=won_tae_choi" data-i18n="hero_btn_choi">KBO: Won-tae Choi 🇰🇷 →</a>
+              <a class="btn ghost" href="lite.html#showcase-league-filter" onclick="document.querySelector('[data-league=CPBL]')?.click()" data-i18n="hero_btn_cpbl">CPBL tips (3 arms) 🇹🇼 →</a>
+              <a class="btn ghost" href="lite_player.html?id=gu_lin_ruei_yang" data-i18n="hero_btn_gulin">Gu Lin →</a>
+              <a class="btn ghost" href="lite_player.html?id=wilmer_rios" data-i18n="hero_btn_rios">LMB: Wilmer Ríos 🇲🇽 →</a>
+              <a class="btn ghost" href="lite_player.html?id=dereck_rodriguez" data-i18n="hero_btn_dereck">LMB: Dereck Rodríguez 🇲🇽 →</a>
+              <button type="button" class="btn ghost trigger-pilot-modal" data-i18n="hero_btn_schedule_audit" style="color:var(--warn); border-color:rgba(232,162,58,0.4);">
+                Request Pilot / Schedule Scouting Audit →
+              </button>
+            </div>
+          </div>
+          <aside class="hero-meta" aria-label="Product facts">
+            <div><span data-i18n="meta_domain_label">Domain</span><strong data-i18n="meta_domain_val">Computer Vision Showcase</strong></div>
+            <div><span data-i18n="meta_coverage_label">Completed Coverage</span><strong data-i18n="meta_coverage_val">100% NL West Staffs Modeled</strong></div>
+            <div><span data-i18n="meta_capabilities_label">Pipeline Scope</span><strong data-i18n="meta_capabilities_val">MLB (30 Clubs), NCAA, NPB, KBO, CPBL, LMB</strong></div>
+            <div><span data-i18n="meta_feed_label">Baseline Feed</span><strong data-i18n="meta_feed_val">Broadcast Center-Field (CF) &amp; Synergy</strong></div>
+            <div><span data-i18n="meta_scope_label">Detection Scope</span><strong data-i18n="meta_scope_val">Glove, Posture, Forearm, Catcher Setup</strong></div>
+            <div><span data-i18n="meta_enterprise_label">Enterprise Access</span><strong data-i18n="meta_enterprise_val">Conference Exclusivity &amp; 4K Multi-Angle</strong></div>
+            <div><span data-i18n="meta_gate_label">Actionable Gate</span><strong data-i18n="meta_gate_val">Validated Out-of-Sample (≥75%)</strong></div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- Showcase Arms Banner & Cards -->
+      <section class="section">
+        <div class="eyebrow" data-i18n="showcase_eyebrow">Global League Showcase Dossiers</div>
+        <h2 data-i18n="showcase_h2">Tested Multi-League Benchmark Case Studies (Full Interactive Tools Unlocked)</h2>
+        <p class="lede" data-i18n="showcase_lede">
+          Experience our full pre-release mechanical cue breakdowns, broadcast video source specifications, and holdout-validated biomechanical metrics across benchmark starting pitchers in NCAA D1, NPB (Japan), KBO (Korea), CPBL (Taiwan), LMB (Mexico), and MLB.
+        </p>
+
+        <div class="coverage-filter-bar" id="showcase-league-filter" style="margin-bottom: 1.25rem;">
+          <button type="button" class="filter-btn active" data-league="all" data-i18n="filter_all_leagues">All Leagues (12 Showcase Profiles)</button>
+          <button type="button" class="filter-btn" data-league="MLB" data-i18n="filter_mlb">MLB 🇺🇸 (NL West)</button>
+          <button type="button" class="filter-btn" data-league="NCAA" data-i18n="filter_ncaa">NCAA 🎓 (College D1)</button>
+          <button type="button" class="filter-btn" data-league="NPB" data-i18n="filter_npb">NPB 🇯🇵 (Japan)</button>
+          <button type="button" class="filter-btn" data-league="KBO" data-i18n="filter_kbo">KBO 🇰🇷 (Korea)</button>
+          <button type="button" class="filter-btn" data-league="CPBL" data-i18n="filter_cpbl">CPBL 🇹🇼 (Taiwan)</button>
+          <button type="button" class="filter-btn" data-league="LMB" data-i18n="filter_lmb">LMB 🇲🇽 (Mexico)</button>
+        </div>
+
+        <div class="grid" id="lite-showcase-grid" style="grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: 1.25rem; margin-top: 1.25rem;">
+          <!-- Populated by lite_app.js -->
+        </div>
+      </section>
+
+      <!-- REAL CATCHER TIP SHOWCASE (Gabriel Moreno ARI) -->
+      <section class="section" id="catcher-showcase-root">
+        <div class="eyebrow" data-i18n="catcher_eyebrow">Battery &amp; Target Tracking · Real NL West Discovery</div>
+        <h2 data-i18n="catcher_h2">Featured Catcher Setup Tell: Pre-Pitch Target Shift &amp; Stance Timing</h2>
+        <p class="lede" data-i18n="catcher_lede">
+          Pitchers aren't the only ones tipping pitches. Computer vision isolates pre-pitch target positioning, glove elevation shifts, and crouch posture cues across MLB catchers before the pitcher comes set.
+        </p>
+
+        <div class="catcher-showcase-container">
+          <div class="catcher-showcase-header">
+            <div>
+              <div style="display:flex; align-items:center; gap:0.6rem; margin-bottom:0.25rem;">
+                <span class="lite-badge-showcase" data-i18n="catcher_unlocked_badge">★ UNLOCKED CATCHER CASE STUDY</span>
+                <span class="badge hot" id="catcher-signal-badge" data-i18n="catcher_signal_badge">100% Signal Floor</span>
+              </div>
+              <h3 style="margin:0; font-size:1.4rem;" id="catcher-active-name">Gabriel Moreno</h3>
+              <div style="font-size:0.85rem; color:var(--muted); margin-top:0.2rem;" id="catcher-active-team" data-i18n="catcher_team_sub">
+                Arizona Diamondbacks (ARI) · Primary Starter
+              </div>
+            </div>
+
+            <!-- Catcher Showcase Header Pill -->
+            <div class="catcher-selector-pills">
+              <span class="badge ok" style="padding:0.4rem 0.8rem; font-size:0.82rem; font-weight:700;" data-i18n="catcher_header_pill">
+                Arizona Diamondbacks Battery Scouting · Gabriel Moreno
+              </span>
+            </div>
+          </div>
+
+          <!-- Tell Sub-Tabs -->
+          <div class="catcher-tell-tabs" id="catcher-tell-buttons">
+            <!-- Populated dynamically by lite_app.js -->
+          </div>
+
+          <div class="catcher-visual-grid">
+            <!-- Interactive Visual Strike Zone Target Display -->
+            <div class="catcher-diagram-box">
+              <div style="position:absolute; top:1rem; left:1.25rem; font-family:var(--mono); font-size:0.75rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em;" data-i18n="catcher_diagram_label">
+                Computer Vision · Pre-Pitch Glove Target Shift
+              </div>
+              <div id="catcher-svg-display" style="width:100%; display:flex; justify-content:center; margin-top:1.25rem;">
+                <!-- SVG rendered by lite_app.js -->
+              </div>
+            </div>
+
+            <!-- Tell Data & Metrics -->
+            <div>
+              <h4 style="margin:0 0 0.5rem; font-size:1.15rem; color:#fff;" data-i18n="catcher_variance_title">Biomechanical Target Variance</h4>
+              <p style="font-size:0.88rem; color:var(--text); line-height:1.55; margin-bottom:1rem;" id="catcher-observation-text">
+                Before Eduardo Rodriguez or starting staff come set, Moreno establishes his primary glove target noticeably wider glove-side (outside border to LHH) on Changeups compared to 4-Seam Fastballs.
+              </p>
+
+              <div class="catcher-stat-metrics">
+                <div class="catcher-metric-tile">
+                  <div class="catcher-metric-val good" id="c-metric-1-val">+7.8 in</div>
+                  <div class="catcher-metric-lbl" id="c-metric-1-lbl" data-i18n="catcher_metric_1_lbl">Glove-Side Target Shift</div>
+                </div>
+                <div class="catcher-metric-tile">
+                  <div class="catcher-metric-val good" id="c-metric-2-val">100%</div>
+                  <div class="catcher-metric-lbl" id="c-metric-2-lbl" data-i18n="catcher_metric_2_lbl">Predictive Signal Floor</div>
+                </div>
+                <div class="catcher-metric-tile">
+                  <div class="catcher-metric-val" id="c-metric-3-val">0.48 m</div>
+                  <div class="catcher-metric-lbl" id="c-metric-3-lbl" data-i18n="catcher_metric_3_lbl">Target Y (Low-Away)</div>
+                </div>
+                <div class="catcher-metric-tile">
+                  <div class="catcher-metric-val warn" id="c-metric-4-val">CH vs FF</div>
+                  <div class="catcher-metric-lbl" id="c-metric-4-lbl" data-i18n="catcher_metric_4_lbl">Primary Pitch Contrast</div>
+                </div>
+              </div>
+
+              <div style="background:var(--bg-elev); border-left:3px solid var(--accent); padding:0.85rem 1rem; border-radius:3px; margin-top:1rem;">
+                <div style="font-size:0.8rem; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:0.25rem;" data-i18n="catcher_scout_plan_title">
+                  Advance Scouting &amp; Game Planning Translation
+                </div>
+                <p style="font-size:0.84rem; color:var(--text); margin:0; line-height:1.5;" id="catcher-takeaway-text">
+                  When Moreno sets target >6 inches glove-side before the pitcher settles into the stretch, off-speed probability is 94%+. LHH hitters can eliminate the high inside fastball.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4-Step Operational Workflow Section -->
+      <section class="section">
+        <div class="eyebrow" data-i18n="workflow_eyebrow">Operational Workflow</div>
+        <h2 data-i18n="workflow_h2">Operational Workflow: From Automated Detection to On-Field Execution</h2>
+        <p class="lede" data-i18n="workflow_lede">
+          How Major League clubs and college championship programs transform computer vision signals into on-field competitive advantage through a four-stage execution pipeline.
+        </p>
+
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; margin: 1.5rem 0;">
+          <div class="tile" style="border-top: 3px solid var(--accent); background: var(--bg-panel); padding: 1.25rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem;">
+              <span style="font-family: var(--mono); font-size: 1.8rem; font-weight: 700; color: var(--accent); line-height: 1;">01</span>
+              <span class="badge" style="background: var(--accent-dim); color: var(--accent); font-size: 0.7rem; font-weight: 600;" data-i18n="step1_badge">MODEL</span>
+            </div>
+            <h3 style="margin: 0.25rem 0 0.5rem; font-size: 1.05rem;" data-i18n="step1_title">The Model Finds the Pattern</h3>
+            <p style="font-size: 0.84rem; color: var(--muted); margin: 0; line-height: 1.55;" data-i18n="step1_desc">
+              Automated computer vision continuously scans multi-angle game video, tracking 30+ anatomical landmarks across uniform delivery strata to isolate and rank physical mechanical discrepancies before hand break.
+            </p>
+          </div>
+
+          <div class="tile" style="border-top: 3px solid var(--good); background: var(--bg-panel); padding: 1.25rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem;">
+              <span style="font-family: var(--mono); font-size: 1.8rem; font-weight: 700; color: var(--good); line-height: 1;">02</span>
+              <span class="badge" style="background: var(--good-dim); color: var(--good); font-size: 0.7rem; font-weight: 600;" data-i18n="step2_badge">ANALYSTS</span>
+            </div>
+            <h3 style="margin: 0.25rem 0 0.5rem; font-size: 1.05rem;" data-i18n="step2_title">Analysts Confirm the Tip</h3>
+            <p style="font-size: 0.84rem; color: var(--muted); margin: 0; line-height: 1.55;" data-i18n="step2_desc">
+              Advance scouts and quantitative analysts vet ranked leads against baseline pitch mixes, permutation null tests, and multi-game holdouts to confirm genuine statistical lift and rule out camera artifacts.
+            </p>
+          </div>
+
+          <div class="tile" style="border-top: 3px solid var(--warn); background: var(--bg-panel); padding: 1.25rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem;">
+              <span style="font-family: var(--mono); font-size: 1.8rem; font-weight: 700; color: var(--warn); line-height: 1;">03</span>
+              <span class="badge" style="background: rgba(232,162,58,0.12); color: var(--warn); font-size: 0.7rem; font-weight: 600;" data-i18n="step3_badge">COACHES</span>
+            </div>
+            <h3 style="margin: 0.25rem 0 0.5rem; font-size: 1.05rem;" data-i18n="step3_title">Coaches Teach the Recognition</h3>
+            <p style="font-size: 0.84rem; color: var(--muted); margin: 0; line-height: 1.55;" data-i18n="step3_desc">
+              Hitting coaches, pitching coordinators, and advance staff distill validated biomechanical differences into intuitive visual triggers, situational recognition drills, and count-specific game plans.
+            </p>
+          </div>
+
+          <div class="tile" style="border-top: 3px solid #a78bfa; background: var(--bg-panel); padding: 1.25rem;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.6rem;">
+              <span style="font-family: var(--mono); font-size: 1.8rem; font-weight: 700; color: #a78bfa; line-height: 1;">04</span>
+              <span class="badge" style="background: rgba(167,139,250,0.12); color: #a78bfa; font-size: 0.7rem; font-weight: 600;" data-i18n="step4_badge">PLAYERS</span>
+            </div>
+            <h3 style="margin: 0.25rem 0 0.5rem; font-size: 1.05rem;" data-i18n="step4_title">Players Recognize on the Field</h3>
+            <p style="font-size: 0.84rem; color: var(--muted); margin: 0; line-height: 1.55;" data-i18n="step4_desc">
+              Hitters in the batter's box, baserunners on the basepaths, and dugout staff execute live recognition before ball release—eliminating pitch options, sharpening swing decisions, and driving run production.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Enterprise & Exclusivity Banner -->
+      <section class="section">
+        <div class="lite-showcase-banner">
+          <div>
+            <h3 data-i18n="enterprise_h3">Enterprise Program Licensing &amp; Conference Exclusivity</h3>
+            <p data-i18n="enterprise_desc">
+              Preflight provides full-roster pitch anticipation models, in-stadium 4K multi-angle video integration, and conference lockout protection (guaranteed single-school license per conference).
+            </p>
+            <div class="lite-showcase-pills">
+              <span class="lite-showcase-pill"><span class="dot"></span><span data-i18n="enterprise_pill1">Signed Mutual NDA Prior to Video Sharing</span></span>
+              <span class="lite-showcase-pill"><span class="dot"></span><span data-i18n="enterprise_pill2">Conference Lockout Protection (Tier 2)</span></span>
+              <span class="lite-showcase-pill"><span class="dot"></span><span data-i18n="enterprise_pill3">Automated Synergy Weekend Rotation Audits</span></span>
+              <span class="lite-showcase-pill"><span class="dot"></span><span data-i18n="enterprise_pill4">47+ Active NL West Catcher Setup Cues</span></span>
+            </div>
+          </div>
+          <button type="button" class="btn trigger-pilot-modal" data-i18n="enterprise_btn" style="white-space: nowrap; font-size: 0.95rem; padding: 0.85rem 1.5rem;">
+            Request Pilot / Schedule Audit →
+          </button>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <strong data-i18n="footer_copy">Colby Morris · Preflight Computer Vision (Lite Showcase)</strong>
+        <span data-i18n="footer_sub">Confidential MLB Advance Scouting &amp; Pitch Anticipation Platform.</span>
+      </footer>
+    </div>
+
+    <!-- Pilot Request Modal -->
+    <div class="lite-modal-backdrop" id="pilot-modal-backdrop">
+      <div class="lite-modal" id="pilot-modal">
+        <button type="button" class="lite-modal-close" id="pilot-modal-close">&times;</button>
+        <div class="eyebrow" style="margin-bottom:0.4rem; color:var(--accent);" data-i18n="modal_eyebrow">Preflight Pilot Outreach</div>
+        <h3 id="pilot-modal-title" data-i18n="modal_h3">Request Scouting Pilot / Schedule Audit</h3>
+        <p class="sub" data-i18n="modal_sub">
+          Connect your coaching staff, advance scouts, and analytics department to Preflight's automated pitch anticipation models and video audit pipeline.
+        </p>
+
+        <div class="features-list">
+          <div data-i18n="modal_f1">✓ Signed NDA executed prior to video sharing (100% confidentiality guaranteed)</div>
+          <div data-i18n="modal_f2">✓ Global Pro &amp; NCAA Coverage: MLB/MiLB, NPB, KBO, CPBL, LMB, Winter Leagues &amp; College</div>
+          <div data-i18n="modal_f3">✓ Automated opponent weekend rotation audits via Synergy or stadium video</div>
+          <div data-i18n="modal_f4">✓ Active catcher setup &amp; pitcher pre-release mechanical variance reports</div>
+          <div data-i18n="modal_f5">✓ Conference lockout protection (guaranteed single-school exclusivity)</div>
+        </div>
+
+        <form id="pilot-modal-form">
+          <div class="form-group">
+            <label for="pilot-name" data-i18n="modal_lbl_name">Full Name *</label>
+            <input type="text" id="pilot-name" required placeholder="e.g. Coach Alex Smith" />
+          </div>
+
+          <div class="form-group">
+            <label for="pilot-org" data-i18n="modal_lbl_org">Organization / School *</label>
+            <input type="text" id="pilot-org" required placeholder="e.g. College Name / Pro Organization" />
+          </div>
+
+          <div class="form-group">
+            <label for="pilot-email" data-i18n="modal_lbl_email">Work / Official Email *</label>
+            <input type="email" id="pilot-email" required placeholder="e.g. asmith@college.edu" />
+          </div>
+
+          <div class="form-group">
+            <label for="pilot-level" data-i18n="modal_lbl_level">Level / Division *</label>
+            <select id="pilot-level">
+              <option value="NCAA Division I (Power Conference)">NCAA Division I (Power Conference - SEC, ACC, Big 12, Big Ten)</option>
+              <option value="NCAA Division I (Mid-Major)">NCAA Division I (Mid-Major)</option>
+              <option value="NCAA Division II / III / NAIA / JUCO">NCAA Division II / III / NAIA / JUCO</option>
+              <option value="MLB / MiLB (North America)">MLB / MiLB (North America)</option>
+              <option value="NPB (Japan Nippon Professional Baseball)">NPB (Japan Nippon Professional Baseball)</option>
+              <option value="KBO (Korea Baseball Organization)">KBO (Korea Baseball Organization)</option>
+              <option value="CPBL (Chinese Professional Baseball League)">CPBL (Chinese Professional Baseball League)</option>
+              <option value="Mexican League (LMB) &amp; Winter Leagues (LIDOM / LMP / LVBP)">Mexican League (LMB) &amp; Winter Leagues (LIDOM / LMP / LVBP)</option>
+              <option value="Independent / Player Development Facility">Independent / Player Development Facility</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="pilot-tier" data-i18n="modal_lbl_tier">Tier of Interest *</label>
+            <select id="pilot-tier">
+              <option value="College Tier 1: Standard Team License">College Tier 1: Standard Team License</option>
+              <option value="College Tier 2: Conference Exclusivity Premium" selected>College Tier 2: Conference Exclusivity Premium ("Monopolize Your Conference")</option>
+              <option value="College Tier 3: National Monopoly Sole Contract">College Tier 3: National Monopoly Sole Contract</option>
+              <option value="Pro / Enterprise Deployment (MLB / NPB / KBO / CPBL / Winter Leagues)">Pro / Enterprise Deployment (MLB / NPB / KBO / CPBL / Winter Leagues)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="pilot-notes" data-i18n="modal_lbl_notes">Notes / Specific Opponents / Timeline</label>
+            <textarea id="pilot-notes" rows="3" placeholder="Specify any upcoming weekend series, conference rivals, target pitchers, or Synergy video setup..."></textarea>
+          </div>
+
+          <div class="lite-modal-actions">
+            <button type="submit" class="lite-btn-primary" data-i18n="modal_submit">Submit Pilot Request →</button>
+            <a href="mailto:colby.morris08@gmail.com?subject=Preflight%20Scouting%20Pilot%20Request" class="lite-btn-secondary" data-i18n="modal_direct_email">Direct Email</a>
+          </div>
+        </form>
+
+        <div class="lite-success-message" id="pilot-modal-success">
+          <strong data-i18n="modal_success_title">Thank you for your pilot request.</strong> <span data-i18n="modal_success_body">Your default email client has been prepared with your request parameters directed to Colby Morris (<a href="mailto:colby.morris08@gmail.com" style="color:inherit; font-weight:bold;">colby.morris08@gmail.com</a>). We will respond promptly to coordinate NDA execution and video setup.</span>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/i18n.js?v=20260901p11"></script>
+    <script src="js/lite_app.js?v=20260910nopc1"></script>
+  </body>
+</html>
